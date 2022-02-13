@@ -1,0 +1,10 @@
+{
+  "aggr_ip": "localhost",
+  "db_ip": "localhost",
+  "reg_socket": "8765",
+  "exch_socket": "7890",
+  "recv_socket": "4321",
+  "db_socket": "9017",
+  "round_interval": 5,
+  "aggregation_threshold": 1.0
+}

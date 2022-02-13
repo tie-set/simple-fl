@@ -1,0 +1,7 @@
+{
+  "db_ip": "localhost",
+  "db_socket": "9017",
+  "db_name": "sample_data",
+  "db_data_path": "./db",
+  "db_model_path": "./db/models"
+}

@@ -1,0 +1,34 @@
+name: stadleenv
+channels:
+  - defaults
+dependencies:
+  - _libgcc_mutex=0.1
+  - blas=1.0
+  - ca-certificates=2020.7.22
+  - certifi=2020.6.20
+  - intel-openmp=2020.2
+  - libedit=3.1.20191231
+  - libffi=3.2.1
+  - libgcc-ng=9.1.0
+  - libstdcxx-ng=9.1.0
+  - mkl=2020.2
+  - mkl-service=2.3.0
+  - mkl_fft=1.2.0
+  - mkl_random=1.1.1
+  - ncurses=6.2
+  - numpy=1.19.1
+  - numpy-base=1.19.1
+  - openssl=1.1.1h
+  - pip=20.2.3
+  - python=3.7.4
+  - readline=7.0
+  - setuptools=50.3.0
+  - six=1.15.0
+  - sqlite=3.33.0
+  - tk=8.6.10
+  - wheel=0.35.1
+  - xz=5.2.5
+  - zlib=1.2.11
+  - pip:
+    - getmac==0.8.2
+    - websockets==8.1

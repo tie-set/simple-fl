@@ -1,0 +1,9 @@
+{
+  "aggr_ip": "localhost",
+  "reg_socket": "8765",
+  "model_path": "./data/agents",
+  "local_model_file_name": "lms.binaryfile",
+  "global_model_file_name": "gms.binaryfile",
+  "state_file_name": "state",
+  "init_weights_flag": 1
+}
