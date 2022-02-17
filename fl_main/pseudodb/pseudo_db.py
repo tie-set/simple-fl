@@ -20,29 +20,23 @@ class PseudoDB:
 
     def __init__(self):
 
+        # Database ID just in case
         self.id = generate_id()
 
-        self.module_path = pathlib.Path.cwd()
-
-        self.simulation_flag = False
-        if len(sys.argv) > 1:
-            # if sys.argv[1] == '1', it's in simulation mode
-            self.simulation_flag = bool(int(sys.argv[1]))
-
         # read the config file
-        config_file = set_config_file(sys.argv, 2, "db")
+        config_file = set_config_file("db")
         self.config = read_config(config_file)
 
-        self.db_socket = self.config['db_socket']
+        # Initialize DB IP and Port
         self.db_ip = self.config['db_ip']
+        self.db_socket = self.config['db_socket']
 
-        # Init DB
+        # if there is no directory to save models create the dir
         self.data_path = self.config['db_data_path']
-
-        # if there is no directory to save models
         if not os.path.exists(self.data_path):
             os.makedirs(self.data_path)
 
+        # Init DB
         self.db_file = f'{self.data_path}/model_data{time.time()}.db'
         self.dbhandler = SQLiteDBHandler(self.db_file)
         self.dbhandler.initialize_DB()

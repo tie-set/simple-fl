@@ -29,7 +29,7 @@ class StateManager:
         self.agent_set = set()
 
         # read config file
-        config_file = set_config_file(sys.argv, 5, "model")
+        config_file = set_config_file("model")
         self.config = read_config(config_file)
 
         # model names (agreed names only)

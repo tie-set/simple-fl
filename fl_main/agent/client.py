@@ -39,24 +39,26 @@ class Client:
             self.simulation_flag = bool(int(sys.argv[1]))
 
         # Read config
-        config_file = set_config_file(sys.argv, 5, "agent")
+        config_file = set_config_file("agent")
         self.config = read_config(config_file)
 
         # Comm. info to join the FL platform
         self.aggr_ip = self.config['aggr_ip']
         self.wsprefix = f'ws://{self.aggr_ip}:'
         self.msend_socket = 0  # later updated based on welcome message
+        self.reg_socket = self.config['reg_socket']
+
         if self.simulation_flag:
             # if it's simulation, use the manual socket number
-            self.reg_socket = int(sys.argv[2])
-            self.exch_socket = int(sys.argv[3])
+            # self.reg_socket = int(sys.argv[2])
+            self.exch_socket = int(sys.argv[2])
         else:  # Not in simulation mode
-            self.reg_socket = self.config['reg_socket']
+            # self.reg_socket = self.config['reg_socket']
             self.exch_socket = 0  # later updated based on welcome message
 
         # Local file locations
         if self.simulation_flag:
-            self.model_path = f'{self.config["model_path"]}/{sys.argv[4]}'
+            self.model_path = f'{self.config["model_path"]}/{sys.argv[3]}'
         else:
             self.model_path = f'{self.config["model_path"]}/default-agent'
             # self.model_path = self.config['model_path']

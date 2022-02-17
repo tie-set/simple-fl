@@ -90,52 +90,52 @@ Note: The environment has ```Python 3.7.4```. There is some known issues of ```i
 
 
 ## Usage
-### [Minimal Example](examples/minimal)
 
-This sample does not have actual training. This could be used as a template for user implementation of ML Engine.
-#### Sample Execution
+### Running Database and Aggregator
+
+Here is how to configure the FL server side modules of database and aggregator.
 1. Edit the configuration files in the setups folder. The configuration details are explained [here](setups/).
-2. Run the following 3 modules as separated processes in the order of ```pseudo_db``` -> ```server_th``` -> ```minimal_MLEngine```.
+2. Run the following 2 modules as separated processes in the order of ```pseudo_db``` -> ```server_th```.
 
 ```python
 python -m fl_main.pseudodb.pseudo_db
 python -m fl_main.aggregator.server_th
+```
+
+### [Minimal Example](examples/minimal)
+
+This sample does not have actual training. This could be used as a template for user implementation of ML Engine.
+#### Sample Execution
+1. Edit the configuration files (config_agent.json) in the setups folder. The configuration details are explained [here](setups/).
+2. Make sure the Database and Aggregator servers are running already. 
+   Then, run the minimal example as follows.
+
+```python
 python -m examples.minimal.minimal_MLEngine
 ```
 #### Simulation
-*Beta-ver*: FL systems can be run for simulation on the same machine by specifying the port numbers for agents and aggregators. 
-```python
-python -m fl_main.pseudodb.pseudo_db [simulation_flag] [config_path]
-python -m fl_main.aggregator.server_th [simulation_flag] [participation_port] [local_model_recv_port] [config_path]
-python -m examples.minimal.minimal_MLEngine [simulation_flag] [participation_port] [local_model_recv_port] [path_to_local_file] [config_path]
-```
-##### Common
-- ```simulation_flag```: 1 if it's simulation
-- ```config_path```: Path to the config file. If ```AUTO```, the config file in ```(repo root)/setups/config.json```. (For the consistency with older versions, it automatically sets this flag to ```AUTO``` when no flag is given.)
-##### Aggregator side
-- ```participation_port```: Port number waiting for a new agent's participate message
-- ```local_model_recv_port```: Port number waiting for local model uploads from agents. This will be communicated to each agent who sends a participate message to this aggregator via the welcome message.
+FL systems can be run multiple agents for simulation within the same machine by specifying the port numbers for agents. 
 ##### Agent side
-- ```participation_port```: Port number to send a participate message. It needs to match with ```participation_port``` of the aggregator to which the agent sends the message.
-- ```sg_model_recv_port```: Port number waiting for global models from the aggregator. This will be communicated to a selected aggregator via a participate message.
-- ```path_to_local_file```: Path to the local directory storing the ```state``` and model files. This needs to be unique for every agent (The same one for one pair of ```MLEngine``` and ```Client```).
+```python
+python -m examples.minimal.minimal_MLEngine [simulation_flag] [gm_recv_port] [agent_name]
+```
 
-
+- ```simulation_flag```: 1 if it's simulation
+- ```gm_recv_port```: Port number waiting for global models from the aggregator. This will be communicated to the aggregator via a participate message.
+- ```agent_name```: Name of the local agent and directory name storing the ```state``` and model files. This needs to be unique for every agent.
 
 For example:
 ```python
-python -m fl_main.pseudodb.pseudo_db 1 AUTO
-python -m fl_main.aggregator.server_th 1 50001 50002 AUTO
 # First agent
-python -m examples.minimal.minimal_MLEngine 1 50001 50003 a1 AUTO
+python -m examples.minimal.minimal_MLEngine 1 50001 a1
 # Second agent
-python -m examples.minimal.minimal_MLEngine 1 50001 50004 a2 AUTO
+python -m examples.minimal.minimal_MLEngine 1 50002 a2
 ```
 
 
 1. Edit the configuration files in json format in the setups folder. In particular, the agg_threshold can be 1 in this case.
    Also, the "model_names" in config_model file can be ["model1", "model2"].
-2. Run the following 3 modules as separated processes in the order of ```pseudo_db``` -> ```server_th``` -> ```minimal_MLEngine```
+2. After running the database and aggregator servers, run the ```minimal_MLEngine``` 
 
 ### [Image Classification Application](examples/image_classification)
 This sample provides a simple example of integrating this FL framework into "actual" ML training. Please go to [the prototype directory](examples/image_classification) for more details.

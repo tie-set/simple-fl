@@ -10,22 +10,12 @@ from hashlib import sha256
 from fl_main.lib.util.states import ClientState, IDPrefix
 
 
-def set_config_file(argv: List[str], loc_cp: int, config_type: str) -> str:
-    # parse run (simulation) settings
-    if len(argv) > 2:
-        if len(argv) == loc_cp:  # old version without a config path
-            config_mode = 'AUTO'
-        else:  # a config path is given
-            config_mode = str(argv[loc_cp])
-    else:  # not a simulation
-        config_mode = 'AUTO'
+def set_config_file(config_type: str) -> str:
 
     # set the config file name
-    if config_mode == 'AUTO':
-        module_path = pathlib.Path.cwd()
-        config_file = f'{module_path}/setups/config_{config_type}.json'
-    else:
-        config_file = str(config_mode)
+    module_path = pathlib.Path.cwd()
+    config_file = f'{module_path}/setups/config_{config_type}.json'
+
     return config_file
 
 

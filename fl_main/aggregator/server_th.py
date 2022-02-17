@@ -27,14 +27,8 @@ class Server:
         """
         Instantiation of a Server instance
         """
-        # Check command line argvs
-        self.simulation_flag = False
-        if len(sys.argv) > 1:
-            # if sys.argv[1] == '1', it's in simulation mode
-            self.simulation_flag = bool(int(sys.argv[1]))
-
         # read the config file
-        config_file = set_config_file(sys.argv,  5, "aggregator")
+        config_file = set_config_file("aggregator")
         self.config = read_config(config_file)
 
         # functional components
@@ -44,13 +38,9 @@ class Server:
         # Set up FL server's IP address
         self.aggr_ip = self.config['aggr_ip']
 
-        # port numbers, ip address, websocket info
-        if self.simulation_flag:
-            self.reg_socket = int(sys.argv[2])
-            self.recv_socket = int(sys.argv[3])
-        else:  # Not simulation mode
-            self.reg_socket = self.config['reg_socket']
-            self.recv_socket = self.config['recv_socket']
+        # port numbers, websocket info
+        self.reg_socket = self.config['reg_socket']
+        self.recv_socket = self.config['recv_socket']
         self.exch_socket = self.config['exch_socket']
 
         # Set up DB info to connect with DB
