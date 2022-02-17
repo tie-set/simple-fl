@@ -24,6 +24,7 @@ There are a lot more merits that federated learning systems can provide.
   - [Simple FL Package](#Simple-FL-Package)
   - [Install](#install)
   - [Usage](#usage)
+    - [Running Database and Aggregator](#running-database-and-aggregator)
     - [Minimal Example](#minimal-example)
       - [Sample Execution](#sample-execution)
       - [Simulation](#simulation)
