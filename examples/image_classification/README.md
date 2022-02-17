@@ -27,29 +27,36 @@ Convolutional Neural Network
 ## How to Run
 
 ### Additional Installation
-Please install torch and torchvision by "pip install torch/torchvision" first after installing necessary libraries with stadeenv.
+Please install torch and torchvision first after installing necessary libraries with `federatedenv`.
+```
+pip install torch
+pip install torchvision
+```
 
 
 ### Configuration file
 You can configure many settings through the JSON config files in the setups folder. 
 For more details, you can read the general description of the config files on our setups documentation.
 
-An example of the config_model file is located at
+An example of the `config_model.json` file is located at
 ```sh
 examples/image_classification/config_model_ic.json
 ```
+You can simply replace the content of the config_model.json file in the setups folder with the content of the model config file above.
 
 ### Execution 
 This example assumes you are running two agents.
 You can increase the number of agents running on the same device by specifying appropriate port numbers. Please see the README file for this platform.
 
 ```python
-python -m fl_main.pseudodb.pseudo_db 1 AUTO
-python -m fl_main.aggregator.server_th 1 50001 50002 AUTO
+# FL server side
+python -m fl_main.pseudodb.pseudo_db
+python -m fl_main.aggregator.server_th
+
 # First agent
-python -m examples.image_classification.classification_engine 1 50001 50003 a1 AUTO
+python -m examples.image_classification.classification_engine 1 50001 a1
 # Second agent
-python -m examples.image_classification.classification_engine 1 50001 50004 a2 AUTO
+python -m examples.image_classification.classification_engine 1 50002 a2
 ```
 
 ### Additional Instruction
