@@ -30,6 +30,7 @@ class Client:
         # Unique ID in the system
         self.id = generate_id()
 
+        # Getting IP Address of the agent itself
         self.agent_ip = get_ip()
 
         # Check command line argvs
@@ -50,10 +51,8 @@ class Client:
 
         if self.simulation_flag:
             # if it's simulation, use the manual socket number
-            # self.reg_socket = int(sys.argv[2])
             self.exch_socket = int(sys.argv[2])
         else:  # Not in simulation mode
-            # self.reg_socket = self.config['reg_socket']
             self.exch_socket = 0  # later updated based on welcome message
 
         # Local file locations
@@ -61,7 +60,6 @@ class Client:
             self.model_path = f'{self.config["model_path"]}/{sys.argv[3]}'
         else:
             self.model_path = f'{self.config["model_path"]}/default-agent'
-            # self.model_path = self.config['model_path']
 
         # if there is no directory to save models
         if not os.path.exists(self.model_path):

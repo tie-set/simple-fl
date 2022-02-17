@@ -11,7 +11,6 @@ from fl_main.lib.util.states import ClientState, IDPrefix
 
 
 def set_config_file(config_type: str) -> str:
-
     # set the config file name
     module_path = pathlib.Path.cwd()
     config_file = f'{module_path}/setups/config_{config_type}.json'
