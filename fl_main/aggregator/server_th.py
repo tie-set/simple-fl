@@ -143,6 +143,7 @@ class Server:
         um = await websocket.recv()
         msg = pickle.loads(um)
 
+        print("received")
         lmodels = msg[int(ParticipateMSGLocation.lmodels)]
         agent_id = msg[int(ParticipateMSGLocation.agent_id)]
         model_id = msg[int(ParticipateMSGLocation.model_id)]

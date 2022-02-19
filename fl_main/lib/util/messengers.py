@@ -56,7 +56,7 @@ def generate_agent_participation_message(agent_id: str,
                                          simulation_flag: bool,
                                          exch_socket: str,
                                          gene_time: float,
-                                         performance_dict: Dict[str,float],
+                                         meta_dict: Dict[str,float],
                                          agent_ip: str) -> List[Any]:
     msg = list()
     msg.append(AgentMsgType.participate)  # 0
@@ -67,7 +67,7 @@ def generate_agent_participation_message(agent_id: str,
     msg.append(simulation_flag)  # 5
     msg.append(exch_socket)  # 6
     msg.append(gene_time)  # 7
-    msg.append(performance_dict)  # 8
+    msg.append(meta_dict)  # 8
     msg.append(agent_ip)  # 9
     return msg
 

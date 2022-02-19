@@ -16,8 +16,8 @@ def init_models() -> Dict[str,np.array]:
     models['model1'] = np.array([[1, 2, 3], [4, 5, 6]])
     models['model2'] = np.array([[1, 2], [3, 4]])
 
-    if len(sys.argv) > 4:
-        if sys.argv[4] == 'a2':
+    if len(sys.argv) > 3:
+        if sys.argv[3] == 'a2':
             models['model1'] = np.array([[3, 4, 5], [6, 7, 8]])
             models['model2'] = np.array([[3, 4], [5, 6]])
 
@@ -49,8 +49,8 @@ def training(models: Dict[str,np.array], init_flag: bool = False) -> Dict[str,np
     models['model1'] = np.array([[1, 2, 3], [4, 5, 6]])
     models['model2'] = np.array([[1, 2], [3, 4]])
 
-    if len(sys.argv) > 4:
-        if sys.argv[4] == 'a2':
+    if len(sys.argv) > 3:
+        if sys.argv[3] == 'a2':
             models['model1'] = np.array([[3, 4, 5], [6, 7, 8]])
             models['model2'] = np.array([[3, 4], [5, 6]])
 
@@ -102,7 +102,7 @@ if __name__ == '__main__':
     # Sending initial models
     cl.send_models(initial_models, 1, 0.0)
 
-    # Starting FL client 
+    # Starting FL client
     cl.start_fl_client()
 
     training_count = 0
@@ -118,7 +118,7 @@ if __name__ == '__main__':
 
             # load models from the local file
             global_model_id, global_models = cl.load_global_model_data()
-            print('global_models:', global_models)
+            logging.info('global_models:', global_models)
 
             cl.tran_state(cl.ClientState.training)
 

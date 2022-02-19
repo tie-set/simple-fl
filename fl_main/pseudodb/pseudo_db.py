@@ -111,6 +111,7 @@ class PseudoDB:
 
 if __name__ == "__main__":
     logging.basicConfig(level=logging.INFO)
+    logging.info("--- Pseudo DB Started ---")
 
     pdb = PseudoDB()
     start_server = websockets.serve(pdb.handler, pdb.db_ip, pdb.db_socket,

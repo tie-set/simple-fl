@@ -25,7 +25,7 @@ class Client:
     def __init__(self):
 
         time.sleep(2)
-        logging.info(f"Agent initilized at {time.time()}")
+        logging.info(f"--- Agent initialized ---")
 
         # Unique ID in the system
         self.id = generate_id()
@@ -103,6 +103,8 @@ class Client:
                 self.id, model_id, models, self.init_weights_flag, self.simulation_flag,
                 self.exch_socket, gene_time, performance_dict, self.agent_ip)
 
+            logging.debug(msg)
+
             await websocket.send(pickle.dumps(msg))
 
             resp = pickle.loads(await websocket.recv())
@@ -111,7 +113,7 @@ class Client:
             self.round = resp[1]
             self.exch_socket = resp[2]
             self.msend_socket = resp[3]
-            logging.debug(f"Init Response: {resp}")
+            logging.info(f"--- Init Response: {resp} ---")
 
         # State transition to waiting_gm
         self.tran_state(ClientState.waiting_gm)
@@ -158,6 +160,8 @@ class Client:
 
                 _, _, models, model_id = compatible_data_dict_read(data_dict)
                 upd_msg = generate_lmodel_update_message(self.id, model_id, models, performance_dict)
+
+                logging.debug(f'Trained Models: {upd_msg}')
 
                 wsadddr = f'{self.wsprefix}{self.msend_socket}'
                 async with websockets.connect(wsadddr, max_size=None, max_queue=None) as websocket:
