@@ -56,8 +56,6 @@ def training(models: Dict[str,np.array], init_flag: bool = False) -> Dict[str,np
 
     time.sleep(5)
 
-    print("models", models)
-
     return models
 
 def compute_performance(models: Dict[str,np.array], testdata) -> float:
@@ -118,7 +116,7 @@ if __name__ == '__main__':
 
             # load models from the local file
             global_model_id, global_models = cl.load_global_model_data()
-            logging.info('global_models:', global_models)
+            print('Global Models:', global_models)
 
             cl.tran_state(cl.ClientState.training)
 
@@ -130,6 +128,7 @@ if __name__ == '__main__':
             models = training(global_models)
             training_count += 1
             logging.info(f'--- Training Done ---')
+            print("Trained models:", models)
 
             # Check the state in case another global models arrived during the training
             state = cl.read_state()
