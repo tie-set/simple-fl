@@ -61,9 +61,3 @@ These json files are read by aggregators, agents, and DB handlers to configure t
     - e.g. ```state```
 - ```init_weights_flag```: 1 if the weights are initialized with certain values, 0 otherwise where weights are initialized with zeros.
     - e.g. ```1```
-
-
-### ```config_model.json```
-- ```model_names```: A list of model names. Here, every NN should be decomposed into ```numpy.array``` when sending it. Each ```numpy.array``` instance should have a unique name to be used system-wide.
-    - Aggregators issue warnings if models with unknown names are sent from agents.
-    - e.g. ```[ "model1", "model2"]```

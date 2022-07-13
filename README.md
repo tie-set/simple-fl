@@ -135,7 +135,6 @@ python -m examples.minimal.minimal_MLEngine 1 50002 a2
 
 
 1. Edit the configuration files in json format in the setups folder. In particular, the agg_threshold can be 1 in this case.
-   Also, the "model_names" in config_model file can be ["model1", "model2"].
 2. After running the database and aggregator servers, run the ```minimal_MLEngine``` 
 
 ### [Image Classification Application](examples/image_classification)

@@ -38,11 +38,6 @@ pip install torchvision
 You can configure many settings through the JSON config files in the setups folder. 
 For more details, you can read the general description of the config files on our setups documentation.
 
-An example of the `config_model.json` file is located at
-```sh
-examples/image_classification/config_model_ic.json
-```
-You can simply replace the content of the config_model.json file in the setups folder with the content of the model config file above.
 
 ### Execution 
 This example assumes you are running two agents.
