@@ -3,6 +3,8 @@ import time
 import pickle
 import pathlib
 import socket
+import asyncio
+
 # MAC address is used to generate IDs
 from getmac import get_mac_address as gma
 from typing import Dict, List, Any
@@ -165,3 +167,13 @@ def get_ip() -> str:
     finally:
         s.close()
     return ip
+
+
+def init_loop(func):
+    """
+    Start a loop function
+    """
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    loop.run_until_complete(asyncio.gather(func))
+    loop.run_forever()
