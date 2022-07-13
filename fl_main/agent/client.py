@@ -1,18 +1,14 @@
 import asyncio
-import websockets
 import time
-import pickle
 import logging
 import sys
 import os
 from typing import Dict, List, Any
-
 from threading import Thread
-from fl_main.lib.util.helpers import read_config, \
-save_model_file, load_model_file, read_state, write_state, generate_id, \
-set_config_file, get_ip, compatible_data_dict_read, generate_model_id
-
-# Client states
+from fl_main.lib.util.communication_handler import init_client_server, send, receive
+from fl_main.lib.util.helpers import read_config, init_loop, \
+     save_model_file, load_model_file, read_state, write_state, generate_id, \
+     set_config_file, get_ip, compatible_data_dict_read, generate_model_id
 from fl_main.lib.util.states import ClientState, AgentMsgType, GMDistributionMsgLocation, IDPrefix
 from fl_main.lib.util.messengers import generate_lmodel_update_message, generate_agent_participation_message
 
@@ -45,7 +41,7 @@ class Client:
 
         # Comm. info to join the FL platform
         self.aggr_ip = self.config['aggr_ip']
-        self.wsprefix = f'ws://{self.aggr_ip}:'
+        # self.wsprefix = f'ws://{self.aggr_ip}:'
         self.msend_socket = 0  # later updated based on welcome message
         self.reg_socket = self.config['reg_socket']
 
@@ -96,24 +92,19 @@ class Client:
 
         logging.debug(models)
 
-        wsaddr = f'{self.wsprefix}{self.reg_socket}'
-        async with websockets.connect(wsaddr, max_size=None, max_queue=None) as websocket:
-            # Create a participation message
-            msg = generate_agent_participation_message(
+        msg = generate_agent_participation_message(
                 self.id, model_id, models, self.init_weights_flag, self.simulation_flag,
                 self.exch_socket, gene_time, performance_dict, self.agent_ip)
+        resp = await send(msg, self.aggr_ip, self.reg_socket)
 
-            logging.debug(msg)
+        logging.debug(msg)
 
-            await websocket.send(pickle.dumps(msg))
-
-            resp = pickle.loads(await websocket.recv())
-            # Parse the response message
-            # including some socket info and the actual round number
-            self.round = resp[1]
-            self.exch_socket = resp[2]
-            self.msend_socket = resp[3]
-            logging.info(f"--- Init Response: {resp} ---")
+        # Parse the response message
+        # including some socket info and the actual round number
+        self.round = resp[1]
+        self.exch_socket = resp[2]
+        self.msend_socket = resp[3]
+        logging.info(f"--- Init Response: {resp} ---")
 
         # State transition to waiting_gm
         self.tran_state(ClientState.waiting_gm)
@@ -125,7 +116,7 @@ class Client:
         :param websocket:
         :return:
         """
-        gm_msg = pickle.loads(await websocket.recv())
+        gm_msg = await receive(websocket)
         logging.info(f'--- Cluster Global Model Received ---')
 
         logging.debug(f'Models: {gm_msg}')
@@ -163,9 +154,7 @@ class Client:
 
                 logging.debug(f'Trained Models: {upd_msg}')
 
-                wsadddr = f'{self.wsprefix}{self.msend_socket}'
-                async with websockets.connect(wsadddr, max_size=None, max_queue=None) as websocket:
-                    await websocket.send(pickle.dumps(upd_msg))
+                await send(upd_msg, self.aggr_ip, self.msend_socket)
 
                 # State transition to waiting_gm
                 self.tran_state(ClientState.waiting_gm)
@@ -201,18 +190,18 @@ class Client:
         Start a thread for waiting for global models
         """
         time.sleep(0.5)
-        th = Thread(target = self._start_wait_model)
+        th = Thread(target = init_client_server, args=[self.wait_models, self.agent_ip, self.exch_socket])
         th.start()
 
-    def _start_wait_model(self):
-        """
-        Start a server for waiting for global models
-        """
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        receiving_serv = websockets.serve(self.wait_models, self.agent_ip, self.exch_socket, max_size=None, max_queue=None)
-        loop.run_until_complete(asyncio.gather(receiving_serv))
-        loop.run_forever()
+    # def _start_wait_model(self):
+    #     """
+    #     Start a server for waiting for global models
+    #     """
+    #     loop = asyncio.new_event_loop()
+    #     asyncio.set_event_loop(loop)
+    #     receiving_serv = websockets.serve(self.wait_models, self.agent_ip, self.exch_socket, max_size=None, max_queue=None)
+    #     loop.run_until_complete(asyncio.gather(receiving_serv))
+    #     loop.run_forever()
 
     def start_model_exchange_server(self):
         """
@@ -220,17 +209,17 @@ class Client:
         """
         time.sleep(0.5)
         self.agent_running = True
-        th = Thread(target = self._start_model_exchange)
+        th = Thread(target = init_loop, args=[self.model_exchange_routine()])
         th.start()
 
-    def _start_model_exchange(self):
-        """
-        Start a loop for model exchange routine
-        """
-        loop = asyncio.new_event_loop()
-        asyncio.set_event_loop(loop)
-        loop.run_until_complete(asyncio.gather(self.model_exchange_routine()))
-        loop.run_forever()
+    # def _start_model_exchange(self):
+    #     """
+    #     Start a loop for model exchange routine
+    #     """
+    #     loop = asyncio.new_event_loop()
+    #     asyncio.set_event_loop(loop)
+    #     loop.run_until_complete(asyncio.gather(self.model_exchange_routine()))
+    #     loop.run_forever()
 
     # Load and save models
     def load_model(self) -> Dict[str, Any]:

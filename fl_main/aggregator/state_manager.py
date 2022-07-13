@@ -26,14 +26,14 @@ class StateManager:
         self.id = generate_id()
 
         # websocket of agents
-        self.agent_set = set()
+        self.agent_set = list()
 
         # read config file
         config_file = set_config_file("model")
         self.config = read_config(config_file)
 
         # model names (agreed names only)
-        self.mnames = self.config['model_names']
+        self.mnames = list()
 
         # aggregation round
         self.round = 0
@@ -64,6 +64,8 @@ class StateManager:
         :return: (boolean) True if it has enough local models to aggregate
             False otherwise. The threshold is configured in the JSON config.json
         """
+        if len(self.mnames) == 0:
+            return False
 
         num_agents = int(self.agg_threshold * len(self.agent_set))
         if num_agents == 0: num_agents = 1
@@ -78,6 +80,13 @@ class StateManager:
         else:
             logging.info(f'--- Waiting for more local models to be collected ---')
             return False
+
+    def initialize_model_names(self, lmodels):
+        for key in lmodels.keys():
+            self.mnames.append(key)
+        print("model names:", self.mnames)
+        self.local_model_buffers = LimitedDict(self.mnames)
+        self.cluster_models = LimitedDict(self.mnames)
 
     def initialize_models(self, models: Dict[str, np.array], weight_keep: bool = False):
         """
@@ -146,13 +155,17 @@ class StateManager:
             self.local_model_buffers[mname].clear()
         self.local_model_num_samples = list()
 
-    def add_agent(self, agent: str):
+    def add_agent(self, agent_ip: str, socket: str):
         """
         Save the websocket info of an agent
         :param agent: str - websocket address
         :return:
         """
-        self.agent_set.add(agent)
+        agent = {
+            'agent_ip': agent_ip,
+            'socket': socket
+        }
+        self.agent_set.append(agent)
 
     def increment_round(self):
         """
