@@ -112,57 +112,34 @@ if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO)
     logging.info('--- This is a demo of Image Classification with Federated Learning ---')
 
-    cl = Client()
-    logging.info(f'--- Your IP is {cl.agent_ip} ---')
+    fl_client = Client()
+    logging.info(f'--- Your IP is {fl_client.agent_ip} ---')
 
     # Create a set of template models (to tell the shapes)
     initial_models = training(dict(), init_flag=True)
 
     # Sending initial models
-    cl.send_models(initial_models, 1, 0.0)
+    fl_client.send_initial_model(initial_models)
 
-    # Starting FL client 
-    cl.start_fl_client()
+    # Starting FL client
+    fl_client.start_fl_client()
 
     training_count = 0
     gm_arrival_count = 0
     while judge_termination(training_count, gm_arrival_count):
-        # Check the state file saved locally
-        state = cl.read_state()
 
         # Wait for Global models (base models)
-        if state == cl.ClientState.gm_ready:
-            gm_arrival_count += 1
-            logging.info(f'--- Reading Global models ---')
+        global_models = fl_client.wait_for_global_model()
+        gm_arrival_count += 1
 
-            # load models from the local file
-            global_model_id, global_models = cl.load_global_model_data()
-
-            cl.tran_state(cl.ClientState.training)
-
-            # Global Model evaluation (id, accuracy)
-            global_model_performance_data = compute_performance(global_models, prep_test_data(), False)
+        # Global Model evaluation (id, accuracy)
+        global_model_performance_data = compute_performance(global_models, prep_test_data(), False)
 
         # Training
-        if state == cl.ClientState.training:
-            models = training(global_models)
-            training_count += 1
-            logging.info(f'--- Training Done ---')
+        models = training(global_models)
+        training_count += 1
+        logging.info(f'--- Training Done ---')
 
-            # Check the state in case another global models arrived during the training
-            state = cl.read_state()
-            if state == cl.ClientState.gm_ready:
-                # Do nothing
-                # Discard the trained local models and adopt the new global models
-                logging.info(f'--- The training was too slow. A new set of global models are available. ---')
-            else:  # Keep the training results
-                # Send # of training data
-                # meta_data_dict[cl.getReservedKeys().rkeys[0]] = int(TrainingMetaData.num_training_data)
-
-                print("int(TrainingMetaData.num_training_data)", int(TrainingMetaData.num_training_data))
-                accuracy = compute_performance(models, prep_test_data(), True)
-
-                # Send models with accuracy data
-                cl.send_models(models, int(TrainingMetaData.num_training_data), accuracy)
-
-                logging.info(f'--- Normal transition: The trained local models saved ---')
+        # Local Model evaluation (id, accuracy)
+        accuracy = compute_performance(models, prep_test_data(), True)
+        fl_client.send_trained_model(models, int(TrainingMetaData.num_training_data), accuracy)
