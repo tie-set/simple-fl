@@ -161,17 +161,25 @@ class StateManager:
             self.local_model_buffers[mname].clear()
         self.local_model_num_samples = list()
 
-    def add_agent(self, agent_ip: str, socket: str):
+    def add_agent(self, agent_name: str, agent_id: str, agent_ip: str, socket: str):
         """
         Save the websocket info of an agent
         :param agent: str - websocket address
         :return:
         """
+        for agent in self.agent_set:
+            if agent_name == agent['agent_name']:
+                print(f'{agent_name} already exists.')
+                return  agent['agent_id'], agent['socket']
+
         agent = {
+            'agent_name': agent_name,
+            'agent_id': agent_id,
             'agent_ip': agent_ip,
             'socket': socket
         }
         self.agent_set.append(agent)
+        return agent_id, socket
 
     def increment_round(self):
         """

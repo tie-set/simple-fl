@@ -24,6 +24,8 @@ class Client:
         time.sleep(2)
         logging.info(f"--- Agent initialized ---")
 
+        self.agent_name = 'default_agent'
+
         # Unique ID in the system
         self.id = generate_id()
 
@@ -42,21 +44,17 @@ class Client:
 
         # Comm. info to join the FL platform
         self.aggr_ip = self.config['aggr_ip']
-        # self.wsprefix = f'ws://{self.aggr_ip}:'
-        self.msend_socket = 0  # later updated based on welcome message
         self.reg_socket = self.config['reg_socket']
+        self.msend_socket = 0  # later updated based on welcome message
+        self.exch_socket = 0 
 
         if self.simulation_flag:
-            # if it's simulation, use the manual socket number
+            # if it's simulation, use the manual socket number and agent name
             self.exch_socket = int(sys.argv[2])
-        else:  # Not in simulation mode
-            self.exch_socket = 0  # later updated based on welcome message
+            self.agent_name = sys.argv[3]
 
-        # Local file locations
-        if self.simulation_flag:
-            self.model_path = f'{self.config["model_path"]}/{sys.argv[3]}'
-        else:
-            self.model_path = f'{self.config["model_path"]}/default-agent'
+        # Local file location        
+        self.model_path = f'{self.config["model_path"]}/{self.agent_name}'
 
         # if there is no directory to save models
         if not os.path.exists(self.model_path):
@@ -68,15 +66,12 @@ class Client:
 
         # Aggregation round - later updated by the info from the aggregator
         self.round = 0
-
-        # State indicator
-        self.waiting_flag = ClientState.training
         
         # Initialization
         self.init_weights_flag = bool(self.config['init_weights_flag'])
 
-        # Importing ClientState
-        self.ClientState = ClientState
+        # Polling Method
+        self.is_polling = False
 
 
     async def participate(self):
@@ -94,7 +89,7 @@ class Client:
         logging.debug(models)
 
         msg = generate_agent_participation_message(
-                self.id, model_id, models, self.init_weights_flag, self.simulation_flag,
+                self.agent_name, self.id, model_id, models, self.init_weights_flag, self.simulation_flag,
                 self.exch_socket, gene_time, performance_dict, self.agent_ip)
         resp = await send(msg, self.aggr_ip, self.reg_socket)
 
@@ -105,6 +100,7 @@ class Client:
         self.round = resp[1]
         self.exch_socket = resp[2]
         self.msend_socket = resp[3]
+        self.id = resp[4]
         logging.info(f"--- Init Response: {resp} ---")
 
         # State transition to waiting_gm
@@ -118,7 +114,7 @@ class Client:
         :return:
         """
         gm_msg = await receive(websocket)
-        logging.info(f'--- Cluster Global Model Received ---')
+        logging.info(f'--- Global Model Received ---')
 
         logging.debug(f'Models: {gm_msg}')
 
@@ -160,14 +156,28 @@ class Client:
                 # State transition to waiting_gm
                 self.tran_state(ClientState.waiting_gm)
                 logging.info('--- Local Models Sent ---')
+
+            elif state == ClientState.waiting_gm:
+                if self.is_polling == True:
+                    # Implement your polling method
+                    pass
+                else:
+                    # Do nothing
+                    logging.info(f'--- Waiting for Global Model ---')
+                    await asyncio.sleep(3)
+
             elif state == ClientState.training:
                 # Do nothing
                 logging.info(f'--- Training is happening ---')
                 await asyncio.sleep(3)
+
             elif state == ClientState.gm_ready:
                 # Do nothing
                 logging.info(f'--- Global Model is ready ---')
                 await asyncio.sleep(3)
+
+            else:
+                logging.error(f'--- State Not Defined ---')
 
 
     # Starting FL client functions
@@ -175,8 +185,9 @@ class Client:
         """
         Starting FL client core functions
         """
-        self.register_client()        
-        self.start_wait_model_server()
+        self.register_client()
+        if self.is_polling == False:
+            self.start_wait_model_server()
         self.start_model_exchange_server()
 
     def register_client(self):
@@ -194,16 +205,6 @@ class Client:
         th = Thread(target = init_client_server, args=[self.wait_models, self.agent_ip, self.exch_socket])
         th.start()
 
-    # def _start_wait_model(self):
-    #     """
-    #     Start a server for waiting for global models
-    #     """
-    #     loop = asyncio.new_event_loop()
-    #     asyncio.set_event_loop(loop)
-    #     receiving_serv = websockets.serve(self.wait_models, self.agent_ip, self.exch_socket, max_size=None, max_queue=None)
-    #     loop.run_until_complete(asyncio.gather(receiving_serv))
-    #     loop.run_forever()
-
     def start_model_exchange_server(self):
         """
         Start a thread for model exchange routine
@@ -212,15 +213,6 @@ class Client:
         self.agent_running = True
         th = Thread(target = init_loop, args=[self.model_exchange_routine()])
         th.start()
-
-    # def _start_model_exchange(self):
-    #     """
-    #     Start a loop for model exchange routine
-    #     """
-    #     loop = asyncio.new_event_loop()
-    #     asyncio.set_event_loop(loop)
-    #     loop.run_until_complete(asyncio.gather(self.model_exchange_routine()))
-    #     loop.run_forever()
 
     # Load and save models
     def load_model(self) -> Dict[str, Any]:
@@ -256,6 +248,7 @@ class Client:
         data_dict['gene_time'] = gene_time
 
         save_model_file(data_dict, self.model_path, self.lmfile, meta_data_dict)
+        logging.info(f'--- Normal transition: The trained local models saved ---')
 
 
     # Read and change the client state
@@ -273,8 +266,8 @@ class Client:
         :param state: ClientState
         :return:
         """
-        self.waiting_flag = state
-        write_state(self.model_path, self.statefile, self.waiting_flag)
+        # self.waiting_flag = state
+        write_state(self.model_path, self.statefile, state)
 
 
     # Sending models
@@ -296,6 +289,37 @@ class Client:
 
         self.save_model(model_id, models, meta_data_dict)
         self.tran_state(ClientState.sending)
+
+    def send_initial_model(self, initial_models, num_samples=1, perf_val=0.0):
+        self.send_models(initial_models, num_samples, perf_val)
+
+    def send_trained_model(self, models, num_samples, performance_value):
+        # Check the state in case another global models arrived during the training
+        state = self.read_state()
+        if state == ClientState.gm_ready:
+            # Do nothing
+            # Discard the trained local models and adopt the new global models
+            logging.info(f'--- The training was too slow. A new set of global models are available. ---')
+
+        else:  # Keep the training results
+            # Send models
+            self.send_models(models, num_samples, performance_value)
+
+    # Waiting models
+    def wait_for_global_model(self):
+
+        # Wait for global models (base models)
+        while (self.read_state() != ClientState.gm_ready):
+            time.sleep(5)
+
+        logging.info(f'--- Reading Global models ---')
+
+        # load models from the local file
+        global_model_id, global_models = self.load_global_model_data()
+
+        self.tran_state(ClientState.training)
+
+        return global_models
 
 
 if __name__ == "__main__":

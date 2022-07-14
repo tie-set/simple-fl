@@ -49,7 +49,8 @@ def generate_cluster_model_dist_message(aggregator_id: str,
     msg.append(models)  # 4
     return msg
 
-def generate_agent_participation_message(agent_id: str,
+def generate_agent_participation_message(agent_name: str,
+                                         agent_id: str,
                                          model_id: str,
                                          models: Dict[str,np.array],
                                          init_weights_flag: bool,
@@ -69,9 +70,12 @@ def generate_agent_participation_message(agent_id: str,
     msg.append(gene_time)  # 7
     msg.append(meta_dict)  # 8
     msg.append(agent_ip)  # 9
+    msg.append(agent_name)  # 9
+
     return msg
 
 def generate_agent_participation_confirmation_message(round: int,
+                                                      agent_id: str,
                                                       exch_socket: str,
                                                       recv_socket: str) -> List[Any]:
     msg = list()
@@ -79,4 +83,5 @@ def generate_agent_participation_confirmation_message(round: int,
     msg.append(round)  # 1
     msg.append(exch_socket)  # 2
     msg.append(recv_socket)  # 3
+    msg.append(agent_id) # 4
     return msg

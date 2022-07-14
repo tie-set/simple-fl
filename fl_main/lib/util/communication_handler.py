@@ -39,7 +39,7 @@ def init_client_server(func, ip, socket):
 
 async def send(msg, ip, socket):
     """
-    Send a message to the ip and socket
+    Send a message to the IP address and socket
     """
     resp = None
     try:

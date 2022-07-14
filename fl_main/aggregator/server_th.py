@@ -1,6 +1,5 @@
 import asyncio
 import logging
-import sys
 import time
 import numpy as np
 from typing import List, Dict, Any
@@ -69,12 +68,14 @@ class Server:
         es = self.get_exch_socket(msg)
 
         # Add an agent to the agent list
+        agent_name = msg[int(ParticipateMSGLocation.agent_name)]
+        agent_id = msg[int(ParticipateMSGLocation.agent_id)]
         addr = msg[int(ParticipateMSGLocation.agent_ip)]
-        self.sm.add_agent(addr, es)
+        uid, ues = self.sm.add_agent(agent_name, agent_id, addr, es)
 
         # send back 'welcome' message with socket information for future model exchanges
         reply = generate_agent_participation_confirmation_message(
-            f'{self.sm.round}', f'{es}', f'{self.recv_socket}')
+            f'{self.sm.round}', f'{uid}', f'{ues}', f'{self.recv_socket}')
 
         # send the message
         await send_websocket(reply, websocket)
@@ -87,7 +88,7 @@ class Server:
         if self.sm.round == 0:
             await self.initialize_fl(msg)
 
-        # If there was at least one SG aggregation
+        # If there was at least one global model 
         if self.sm.round > 0:
             await self.send_updated_global_model(addr, es)
 
@@ -266,5 +267,4 @@ if __name__ == "__main__":
     init_fl_server(s.register, 
                    s.receive_local_models, 
                    s.model_synthesis_routine(), 
-                   s.aggr_ip, s.reg_socket, 
-                   s.recv_socket)
+                   s.aggr_ip, s.reg_socket, s.recv_socket)

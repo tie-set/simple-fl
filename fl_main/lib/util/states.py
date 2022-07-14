@@ -57,6 +57,7 @@ class ParticipateMSGLocation(IntEnum):
     gene_time = 7
     meta_data = 8
     agent_ip = 9
+    agent_name = 10
 
 class DBPushMsgLocation(IntEnum):
     """
