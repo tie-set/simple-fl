@@ -3,7 +3,15 @@ import asyncio
 import pickle
 import logging
 
-logging.basicConfig(level=logging.INFO)
+def init_db_server(func, ip, socket):
+    """
+    Start the DB server
+    """
+    start_server = websockets.serve(func, ip, socket,
+                                    max_size=None, max_queue=None)
+    loop = asyncio.get_event_loop()
+    loop.run_until_complete(start_server)
+    loop.run_forever()
 
 def init_fl_server(register, receive_local_models, model_synthesis_routine, aggr_ip, reg_socket, recv_socket):
     """
@@ -19,7 +27,6 @@ def init_fl_server(register, receive_local_models, model_synthesis_routine, aggr
                                            model_synthesis_routine))
     loop.run_forever()
 
-
 def init_client_server(func, ip, socket):
     """
     Start the client server
@@ -29,7 +36,6 @@ def init_client_server(func, ip, socket):
     client_server = websockets.serve(func, ip, socket, max_size=None, max_queue=None)
     loop.run_until_complete(asyncio.gather(client_server))
     loop.run_forever()
-
 
 async def send(msg, ip, socket):
     """
@@ -53,7 +59,6 @@ async def send(msg, ip, socket):
         logging.error("Connection lost to the agent: " + ip)
         logging.error(f'--- Message NOT Sent ---')
 
-
 async def send_websocket(msg, websocket):
     """
     Send a binary file (message) to an agent through a give websocket
@@ -64,7 +69,6 @@ async def send_websocket(msg, websocket):
     while not websocket:  # wait until socket being initialized
         await asyncio.sleep(0.001)
     await websocket.send(pickle.dumps(msg))
-
 
 async def receive(websocket):
     """
