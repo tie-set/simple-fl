@@ -1,6 +1,4 @@
 import pickle
-import websockets
-import asyncio
 import logging
 import time
 import os
@@ -11,6 +9,7 @@ from typing import Any, List
 from .sqlite_db import SQLiteDBHandler
 from fl_main.lib.util.helpers import generate_id, read_config, set_config_file
 from fl_main.lib.util.states import DBMsgType, DBPushMsgLocation, ModelType
+from fl_main.lib.util.communication_handler import init_db_server, send_websocket, receive 
 
 class PseudoDB:
     """
@@ -56,13 +55,13 @@ class PseudoDB:
         :return:
         """
         # receive a request from an aggregator
-        bmsg = await websocket.recv()
-        msg = pickle.loads(bmsg)
+        msg = await receive(websocket)
+
         logging.info(f'Request Arrived')
         logging.debug(f'Request: {msg}')
 
         # Extract the message type
-        msg_type = msg[DBPushMsgLocation.msg_type]
+        msg_type = msg[int(DBPushMsgLocation.msg_type)]
 
         reply = list()
         if msg_type == DBMsgType.push: # models
@@ -74,7 +73,8 @@ class PseudoDB:
             raise TypeError(f'Undefined DB Access Message Type: {msg_type}.')
 
         # reply to the aggregator
-        await websocket.send(pickle.dumps(reply))
+        await send_websocket(reply, websocket)
+
 
     def _push_all_data_to_db(self, msg: List[Any]):
         pm = self._parse_message(msg)
@@ -114,8 +114,4 @@ if __name__ == "__main__":
     logging.info("--- Pseudo DB Started ---")
 
     pdb = PseudoDB()
-    start_server = websockets.serve(pdb.handler, pdb.db_ip, pdb.db_socket,
-                                    max_size=None, max_queue=None)
-    loop = asyncio.get_event_loop()
-    loop.run_until_complete(start_server)
-    loop.run_forever()
+    init_db_server(pdb.handler, pdb.db_ip, pdb.db_socket)

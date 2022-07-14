@@ -85,13 +85,12 @@ class Server:
         # If the weights in the first models should be used as the init models
         # The very first agent connecting to the aggregator decides the shape of the models
         if self.sm.round == 0:
-            await self.initialize_fl_round(msg)
+            await self.initialize_fl(msg)
 
         # If there was at least one SG aggregation
         if self.sm.round > 0:
             await self.send_updated_global_model(addr, es)
 
-    # subfunctions
     def get_exch_socket(self, msg):
         if msg[int(ParticipateMSGLocation.sim_flag)]:
             logging.info(f'--- This run is a simulation ---')
@@ -100,31 +99,29 @@ class Server:
             es = self.exch_socket
         return es
 
-    async def initialize_fl_round(self, msg):
-        # push local model info to DB
+    async def initialize_fl(self, msg):
+        """
+        Initialize FL round
+        :param msg: Message received
+        :return:
+        """
+
+        # Extract values from the message received
         agent_id = msg[int(ParticipateMSGLocation.agent_id)]
         model_id = msg[int(ParticipateMSGLocation.model_id)]
         gene_time = msg[int(ParticipateMSGLocation.gene_time)]
-        lmodels = msg[ParticipateMSGLocation.lmodels] # <- Extract local models
+        lmodels = msg[int(ParticipateMSGLocation.lmodels)] # <- Extract local models
         performance = msg[int(ParticipateMSGLocation.meta_data)]
+        init_weights_flag = bool(msg[int(ParticipateMSGLocation.init_flag)])
 
-        self.sm.initialize_model_names(lmodels)
+        # Initialize model info
+        self.sm.initialize_model_info(lmodels, init_weights_flag)
 
+        # Pushing the local model to DB
         await self._push_local_models(agent_id, model_id, lmodels, gene_time, performance)
 
-        # Clear all models saved and buffered
-        self.sm.clear_lmodel_buffers()
-
-        init_weights_flag = bool(msg[int(ParticipateMSGLocation.init_flag)])
-        if init_weights_flag:
-            # Use the received local models as the cluster model (init base models)
-            self.sm.initialize_models(lmodels, weight_keep=init_weights_flag)
-        else:
-            # initialize the model with zeros
-            self.sm.initialize_models(lmodels, weight_keep=False)
-
-        # wait for sending messages
-        await asyncio.sleep(1)
+        # Wait for sending messages
+        await asyncio.sleep(0.1)
 
         # Send out the cluster models
         await self._send_cluster_models_to_all()
@@ -133,7 +130,12 @@ class Server:
         self.sm.increment_round()
 
     async def send_updated_global_model(self, addr, es):
-        # send cluster models to the agent
+        """
+        Send cluster models to the agent
+        :param addr: IP address of agent
+        :param es: Port of the agent
+        :return:
+        """
         model_id = self.sm.cluster_model_ids[-1]
         cluster_models = convert_LDict_to_Dict(self.sm.cluster_models)
         msg = generate_cluster_model_dist_message(self.sm.id, model_id, self.sm.round, cluster_models)

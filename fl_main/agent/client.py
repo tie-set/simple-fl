@@ -5,6 +5,7 @@ import sys
 import os
 from typing import Dict, List, Any
 from threading import Thread
+
 from fl_main.lib.util.communication_handler import init_client_server, send, receive
 from fl_main.lib.util.helpers import read_config, init_loop, \
      save_model_file, load_model_file, read_state, write_state, generate_id, \

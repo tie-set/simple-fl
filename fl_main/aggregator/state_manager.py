@@ -28,10 +28,6 @@ class StateManager:
         # websocket of agents
         self.agent_set = list()
 
-        # read config file
-        config_file = set_config_file("model")
-        self.config = read_config(config_file)
-
         # model names (agreed names only)
         self.mnames = list()
 
@@ -81,12 +77,22 @@ class StateManager:
             logging.info(f'--- Waiting for more local models to be collected ---')
             return False
 
-    def initialize_model_names(self, lmodels):
+    def initialize_model_info(self, lmodels, init_weights_flag):
         for key in lmodels.keys():
             self.mnames.append(key)
         print("model names:", self.mnames)
         self.local_model_buffers = LimitedDict(self.mnames)
         self.cluster_models = LimitedDict(self.mnames)
+
+        # Clear all models saved and buffered
+        self.clear_lmodel_buffers()
+
+        if init_weights_flag:
+            # Use the received local models as the cluster model (init base models)
+            self.initialize_models(lmodels, weight_keep=init_weights_flag)
+        else:
+            # initialize the model with zeros
+            self.initialize_models(lmodels, weight_keep=False)
 
     def initialize_models(self, models: Dict[str, np.array], weight_keep: bool = False):
         """
