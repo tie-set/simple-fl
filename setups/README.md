@@ -45,6 +45,8 @@ These json files are read by aggregators, agents, and DB handlers to configure t
   - e.g. ```5```
 - ```aggregation_threshold```: Percentage of the number of collected local models required to start an aggregation step
     - e.g. ```1.0```, ```0.8```
+- ```is_polling```: A flag for using a polling method or not. If 1, use the polling method, otherwise use a push method.
+    - e.g. ```1```
 
 ### ```config_agent.json```
 - ```aggr_ip```: An aggregator IP address
@@ -60,4 +62,6 @@ These json files are read by aggregators, agents, and DB handlers to configure t
 - ```state_file_name```: A file name to store the agent state in the agent machine.
     - e.g. ```state```
 - ```init_weights_flag```: 1 if the weights are initialized with certain values, 0 otherwise where weights are initialized with zeros.
+    - e.g. ```1```
+- ```is_polling```: A flag for using a polling method or not. If 1, use the polling method, otherwise use a push method.
     - e.g. ```1```

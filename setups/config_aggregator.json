@@ -6,5 +6,6 @@
   "recv_socket": "4321",
   "db_socket": "9017",
   "round_interval": 5,
-  "aggregation_threshold": 1.0
+  "aggregation_threshold": 1.0,
+  "polling": 1
 }
