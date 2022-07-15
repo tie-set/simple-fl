@@ -54,7 +54,7 @@ def training(models: Dict[str,np.array], init_flag: bool = False) -> Dict[str,np
             models['model1'] = np.array([[3, 4, 5], [6, 7, 8]])
             models['model2'] = np.array([[3, 4], [5, 6]])
 
-    time.sleep(5)
+    time.sleep(10)
 
     return models
 
