@@ -5,6 +5,7 @@ class IDPrefix:
     aggregator = 'aggregator'
     db = 'database'
 
+# CLIENT STATE
 class ClientState(IntEnum):
     """
     Client states defined in the Agent specification
@@ -14,6 +15,7 @@ class ClientState(IntEnum):
     sending = 2
     gm_ready = 3
 
+# TYPE ENUM
 class ModelType(Enum):
     """
     Types of ML models
@@ -35,6 +37,7 @@ class AgentMsgType(Enum):
     """
     participate = 0
     update = 1
+    polling = 2
 
 class AggMsgType(Enum):
     """
@@ -42,6 +45,11 @@ class AggMsgType(Enum):
     """
     welcome = 0
     sending_gm_models = 1
+    update = 2
+    ack = 3
+
+# MSG LOCATION
+# MsgType = 0
 
 class ParticipateMSGLocation(IntEnum):
     """
@@ -58,6 +66,20 @@ class ParticipateMSGLocation(IntEnum):
     meta_data = 8
     agent_ip = 9
     agent_name = 10
+    round = 11
+
+class ParticipateConfirmationMSGLocation(IntEnum):
+    """
+    index indicator to read a participate confirmation message
+    """
+    msg_type = 0
+    aggregator_id = 1
+    model_id = 2
+    global_models = 3
+    round = 4
+    agent_id = 5
+    exch_socket = 6
+    recv_socket = 7
 
 class DBPushMsgLocation(IntEnum):
     """
@@ -82,3 +104,21 @@ class GMDistributionMsgLocation(IntEnum):
     model_id = 2
     round = 3
     global_models = 4
+
+class ModelUpMSGLocation(IntEnum):
+    """
+    index indicator to model upload message from agent
+    """
+    msg_type = 0
+    agent_id = 1
+    model_id = 2
+    lmodels = 3
+    gene_time = 4
+    meta_data = 5
+
+class PollingMSGLocation(IntEnum):
+    """
+    index indicator to a polling message from agent
+    """
+    msg_type = 0
+    round = 1

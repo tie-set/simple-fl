@@ -30,11 +30,11 @@ def generate_lmodel_update_message(agent_id: str,
     msg.append(agent_id)  # 1
     msg.append(model_id)  # 2
     msg.append(local_models)  # 3
-    msg.append(None)  # 4
-    msg.append(None)  # 5
-    msg.append(None)  # 6
-    msg.append(time.time())  # 7
-    msg.append(performance_dict)  # 8
+    # msg.append(None)  # 4
+    # msg.append(None)  # 5
+    # msg.append(None)  # 6
+    msg.append(time.time())  # 4
+    msg.append(performance_dict)  # 5
     return msg
 
 def generate_cluster_model_dist_message(aggregator_id: str,
@@ -42,7 +42,7 @@ def generate_cluster_model_dist_message(aggregator_id: str,
                                         round: int,
                                         models: Dict[str,np.array]) -> List[Any]:
     msg = list()
-    msg.append(AggMsgType.sending_gm_models)  # 0
+    msg.append(AggMsgType.update)  # 0
     msg.append(aggregator_id)  # 1
     msg.append(model_id)  # 2
     msg.append(round)  # 3
@@ -71,17 +71,33 @@ def generate_agent_participation_message(agent_name: str,
     msg.append(meta_dict)  # 8
     msg.append(agent_ip)  # 9
     msg.append(agent_name)  # 9
-
     return msg
 
-def generate_agent_participation_confirmation_message(round: int,
+def generate_agent_participation_confirmation_message(aggregator_id: str,
+                                                      model_id: str,
+                                                      models: Dict[str,np.array],
+                                                      round: int,
                                                       agent_id: str,
                                                       exch_socket: str,
                                                       recv_socket: str) -> List[Any]:
     msg = list()
     msg.append(AggMsgType.welcome)  # 0
-    msg.append(round)  # 1
-    msg.append(exch_socket)  # 2
-    msg.append(recv_socket)  # 3
-    msg.append(agent_id) # 4
+    msg.append(aggregator_id)  # 1
+    msg.append(model_id)  # 2
+    msg.append(models)  # 3    
+    msg.append(round)  # 4
+    msg.append(agent_id) # 5
+    msg.append(exch_socket)  # 6
+    msg.append(recv_socket)  # 7
+    return msg
+
+def generate_ack_message():
+    msg = list()
+    msg.append(AggMsgType.ack)
+    return msg
+
+def generate_polling_message(round: int):
+    msg = list()
+    msg.append(AgentMsgType.polling)
+    msg.append(round)
     return msg

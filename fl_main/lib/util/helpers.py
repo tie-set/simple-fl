@@ -61,6 +61,30 @@ def generate_model_id(component_type: str, component_id: str, generation_time: f
     return hash_id.hexdigest()
 
 
+def create_data_dict_from_models(model_id, models, component_id):
+    """
+    Save the trained models to the local file
+    :param model_id: str - model ID
+    :param models: np.array - models
+    :param component_id: ID of FL system
+    :return:
+    """
+    data_dict = dict()
+    data_dict['models'] = models
+    data_dict['model_id'] = model_id 
+    data_dict['my_id'] = component_id
+    data_dict['gene_time'] = time.time()
+
+    return data_dict
+
+
+def create_meta_data_dict(perf_val, num_samples):
+    meta_data_dict = dict()
+    meta_data_dict["accuracy"] = perf_val
+    meta_data_dict["num_samples"] = num_samples
+    return meta_data_dict
+
+
 def compatible_data_dict_read(data_dict: Dict[str, Any]) -> List[Any]:
     # ID init
     # for compatibility with older versions

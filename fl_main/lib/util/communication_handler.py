@@ -51,7 +51,7 @@ async def send(msg, ip, socket):
                 rmsg = await websocket.recv()
                 resp = pickle.loads(rmsg)
             except:
-                logging.info("--- Nothing to be received ---")
+                # logging.info("--- Nothing to be received ---")
                 pass
 
             return resp

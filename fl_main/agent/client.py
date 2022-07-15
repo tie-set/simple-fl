@@ -9,9 +9,10 @@ from threading import Thread
 from fl_main.lib.util.communication_handler import init_client_server, send, receive
 from fl_main.lib.util.helpers import read_config, init_loop, \
      save_model_file, load_model_file, read_state, write_state, generate_id, \
-     set_config_file, get_ip, compatible_data_dict_read, generate_model_id
-from fl_main.lib.util.states import ClientState, AgentMsgType, GMDistributionMsgLocation, IDPrefix
-from fl_main.lib.util.messengers import generate_lmodel_update_message, generate_agent_participation_message
+     set_config_file, get_ip, compatible_data_dict_read, generate_model_id, \
+     create_data_dict_from_models, create_meta_data_dict
+from fl_main.lib.util.states import ClientState, AggMsgType, AgentMsgType, ParticipateConfirmationMSGLocation, GMDistributionMsgLocation, IDPrefix
+from fl_main.lib.util.messengers import generate_lmodel_update_message, generate_agent_participation_message, generate_polling_message
 
 class Client:
     """
@@ -71,7 +72,7 @@ class Client:
         self.init_weights_flag = bool(self.config['init_weights_flag'])
 
         # Polling Method
-        self.is_polling = False
+        self.is_polling = bool(self.config['polling'])
 
 
     async def participate(self):
@@ -94,17 +95,16 @@ class Client:
         resp = await send(msg, self.aggr_ip, self.reg_socket)
 
         logging.debug(msg)
+        logging.info(f"--- Init Response: {resp} ---")
 
         # Parse the response message
         # including some socket info and the actual round number
-        self.round = resp[1]
-        self.exch_socket = resp[2]
-        self.msend_socket = resp[3]
-        self.id = resp[4]
-        logging.info(f"--- Init Response: {resp} ---")
+        self.round = resp[int(ParticipateConfirmationMSGLocation.round)]
+        self.exch_socket = resp[int(ParticipateConfirmationMSGLocation.exch_socket)]
+        self.msend_socket = resp[int(ParticipateConfirmationMSGLocation.recv_socket)]
+        self.id = resp[int(ParticipateConfirmationMSGLocation.agent_id)]
 
-        # State transition to waiting_gm
-        self.tran_state(ClientState.waiting_gm)
+        self.save_model_from_message(resp, 0)
 
 
     async def wait_models(self, websocket, path):
@@ -118,18 +118,26 @@ class Client:
 
         logging.debug(f'Models: {gm_msg}')
 
+        self.save_model_from_message(gm_msg, 1)
+
+    def save_model_from_message(self, msg, type=1):
+
+        if type == 0: 
+            MSG_LOC = ParticipateConfirmationMSGLocation
+        elif type == 1:
+            MSG_LOC = GMDistributionMsgLocation
+
         # pass (model_id, models) to an app
-        data_dict = dict()
-        data_dict['model_id'] = gm_msg[int(GMDistributionMsgLocation.model_id)]
-        data_dict['models'] = gm_msg[int(GMDistributionMsgLocation.global_models)]
-        self.round = gm_msg[int(GMDistributionMsgLocation.round)]
+        data_dict = create_data_dict_from_models(msg[int(MSG_LOC.model_id)], 
+                        msg[int(MSG_LOC.global_models)], msg[int(MSG_LOC.aggregator_id)])
+        self.round = msg[int(MSG_LOC.round)]
 
         # Save the received cluster global models to the local file
         save_model_file(data_dict, self.model_path, self.gmfile)
+        logging.info(f'--- Normal transition: The trained local models saved ---')
         
-        # State transition to sg_ready
+        # State transition to gm_ready
         self.tran_state(ClientState.gm_ready)
-
 
     async def model_exchange_routine(self):
         """
@@ -139,45 +147,58 @@ class Client:
         """
         while True:
             # Periodically check the state
-            await asyncio.sleep(3)
+            await asyncio.sleep(5)
             state = read_state(self.model_path, self.statefile)
 
-            if state == ClientState.sending: # ready to send
-                # Read the models from the local file
-                data_dict, performance_dict = load_model_file(self.model_path, self.lmfile)
-
-                _, _, models, model_id = compatible_data_dict_read(data_dict)
-                upd_msg = generate_lmodel_update_message(self.id, model_id, models, performance_dict)
-
-                logging.debug(f'Trained Models: {upd_msg}')
-
-                await send(upd_msg, self.aggr_ip, self.msend_socket)
-
-                # State transition to waiting_gm
-                self.tran_state(ClientState.waiting_gm)
-                logging.info('--- Local Models Sent ---')
+            if state == ClientState.sending: 
+                # Ready to send the local model
+                await self.send_models()
 
             elif state == ClientState.waiting_gm:
+                # Waiting for global models
                 if self.is_polling == True:
-                    # Implement your polling method
-                    pass
+                    await self.process_polling()
                 else:
                     # Do nothing
                     logging.info(f'--- Waiting for Global Model ---')
-                    await asyncio.sleep(3)
 
             elif state == ClientState.training:
+                # Local model is being trained
                 # Do nothing
                 logging.info(f'--- Training is happening ---')
-                await asyncio.sleep(3)
 
             elif state == ClientState.gm_ready:
+                # Global model has been received
                 # Do nothing
                 logging.info(f'--- Global Model is ready ---')
-                await asyncio.sleep(3)
 
             else:
                 logging.error(f'--- State Not Defined ---')
+
+    async def send_models(self):
+        # Read the models from the local file
+        data_dict, performance_dict = load_model_file(self.model_path, self.lmfile)
+        _, _, models, model_id = compatible_data_dict_read(data_dict)
+        msg = generate_lmodel_update_message(self.id, model_id, models, performance_dict)
+
+        logging.debug(f'Trained Models: {msg}')
+
+        await send(msg, self.aggr_ip, self.msend_socket)
+
+        # State transition to waiting_gm
+        self.tran_state(ClientState.waiting_gm)
+        logging.info('--- Local Models Sent ---')
+
+    async def process_polling(self):
+        logging.info(f'--- Polling to see if there is any update ---')
+
+        msg = generate_polling_message(self.round)
+        resp = await send(msg, self.aggr_ip, self.msend_socket)
+        if resp[0] == AggMsgType.update:
+            logging.info(f'--- Global Model Received ---')
+            self.save_model_from_message(resp, 1)
+        else:
+            logging.info(f'--- Global Model is NOT ready (ACK) ---')
 
 
     # Starting FL client functions
@@ -223,34 +244,6 @@ class Client:
         data_dict, _ = load_model_file(self.model_path, self.gmfile)
         return data_dict
 
-    def load_global_model_data(self) -> List[Any]:
-        """
-        Read a global model file and return  ID and models
-        :return: str - Model ID
-        :return: np.array - models
-        """
-        data_dict, _ = load_model_file(self.model_path, self.gmfile)
-        return data_dict['model_id'], data_dict['models']
-
-    def save_model(self, model_id, models, meta_data_dict):
-        """
-        Save the trained models to the local file
-        :param model_id: str - model ID
-        :param models: np.array - models
-        :param meta_data_dict: Dict with meta data
-        :return:
-        """
-        data_dict = dict()
-        data_dict['models'] = models
-        gene_time = time.time()
-        data_dict['model_id'] = model_id 
-        data_dict['my_id'] = self.id
-        data_dict['gene_time'] = gene_time
-
-        save_model_file(data_dict, self.model_path, self.lmfile, meta_data_dict)
-        logging.info(f'--- Normal transition: The trained local models saved ---')
-
-
     # Read and change the client state
     def read_state(self) -> ClientState:
         """
@@ -269,9 +262,21 @@ class Client:
         # self.waiting_flag = state
         write_state(self.model_path, self.statefile, state)
 
-
     # Sending models
-    def send_models(self, models, num_samples, perf_val):
+    def send_initial_model(self, initial_models, num_samples=1, perf_val=0.0):
+        self.setup_sending_models(initial_models, num_samples, perf_val)
+
+    def send_trained_model(self, models, num_samples, performance_value):
+        # Check the state in case another global models arrived during the training
+        state = self.read_state()
+        if state == ClientState.gm_ready:
+            # Do nothing: Discard the trained local models and adopt the new global models
+            logging.info(f'--- The training was too slow. A new set of global models are available. ---')
+        else:  # Keep the training results
+            # Send models
+            self.setup_sending_models(models, num_samples, performance_value)
+
+    def setup_sending_models(self, models, num_samples, perf_val):
         """
         Save the trained models to the local file
         :param models: np.array - models
@@ -283,27 +288,12 @@ class Client:
         model_id = generate_model_id(IDPrefix.agent, self.id, time.time())
 
         # Local Model evaluation (id, accuracy)
-        meta_data_dict = dict()
-        meta_data_dict["accuracy"] = perf_val
-        meta_data_dict["num_samples"] = num_samples
+        meta_data_dict = create_meta_data_dict(perf_val, num_samples)
+        data_dict = create_data_dict_from_models(model_id, models, self.id)
+        save_model_file(data_dict, self.model_path, self.lmfile, meta_data_dict)
+        logging.info(f'--- Normal transition: The trained local models saved ---')
 
-        self.save_model(model_id, models, meta_data_dict)
         self.tran_state(ClientState.sending)
-
-    def send_initial_model(self, initial_models, num_samples=1, perf_val=0.0):
-        self.send_models(initial_models, num_samples, perf_val)
-
-    def send_trained_model(self, models, num_samples, performance_value):
-        # Check the state in case another global models arrived during the training
-        state = self.read_state()
-        if state == ClientState.gm_ready:
-            # Do nothing
-            # Discard the trained local models and adopt the new global models
-            logging.info(f'--- The training was too slow. A new set of global models are available. ---')
-
-        else:  # Keep the training results
-            # Send models
-            self.send_models(models, num_samples, performance_value)
 
     # Waiting models
     def wait_for_global_model(self):
@@ -315,7 +305,9 @@ class Client:
         logging.info(f'--- Reading Global models ---')
 
         # load models from the local file
-        global_model_id, global_models = self.load_global_model_data()
+        data_dict = self.load_model()
+        global_models = data_dict['models']
+        # global_model_id, global_models = self.load_global_model_data()
 
         self.tran_state(ClientState.training)
 

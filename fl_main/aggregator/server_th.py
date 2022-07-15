@@ -6,10 +6,11 @@ from typing import List, Dict, Any
 
 from fl_main.lib.util.communication_handler import init_fl_server, send, send_websocket, receive 
 from fl_main.lib.util.data_struc import convert_LDict_to_Dict
-from fl_main.lib.util.helpers import read_config, set_config_file, init_loop
-from fl_main.lib.util.messengers import generate_db_push_message, \
+from fl_main.lib.util.helpers import read_config, set_config_file
+from fl_main.lib.util.messengers import generate_db_push_message, generate_ack_message, \
      generate_cluster_model_dist_message, generate_agent_participation_confirmation_message
-from fl_main.lib.util.states import ParticipateMSGLocation, ModelType, AggMsgType
+from fl_main.lib.util.states import ParticipateMSGLocation, ModelUpMSGLocation, PollingMSGLocation, \
+     ModelType, AggMsgType, AgentMsgType
 
 from .state_manager import StateManager
 from .aggregation import Aggregator
@@ -49,6 +50,8 @@ class Server:
         self.round_interval = self.config['round_interval']
         self.sm.agg_threshold = self.config['aggregation_threshold']
 
+        self.is_polling = bool(self.config['polling'])
+
 
     async def register(self, websocket: str, path):
         """
@@ -71,28 +74,28 @@ class Server:
         agent_name = msg[int(ParticipateMSGLocation.agent_name)]
         agent_id = msg[int(ParticipateMSGLocation.agent_id)]
         addr = msg[int(ParticipateMSGLocation.agent_ip)]
+
         uid, ues = self.sm.add_agent(agent_name, agent_id, addr, es)
-
-        # send back 'welcome' message with socket information for future model exchanges
-        reply = generate_agent_participation_confirmation_message(
-            f'{self.sm.round}', f'{uid}', f'{ues}', f'{self.recv_socket}')
-
-        # send the message
-        await send_websocket(reply, websocket)
-
-        # wait for sending messages
-        await asyncio.sleep(1)
 
         # If the weights in the first models should be used as the init models
         # The very first agent connecting to the aggregator decides the shape of the models
         if self.sm.round == 0:
             await self.initialize_fl(msg)
 
-        # If there was at least one global model 
-        if self.sm.round > 0:
-            await self.send_updated_global_model(addr, es)
+        # If there was at least one global model, just proceed
+
+        # Wait for sending messages
+        await asyncio.sleep(0.5)
+
+        # send back 'welcome' message
+        await self.send_updated_global_model(websocket, uid, ues)
 
     def get_exch_socket(self, msg):
+        """
+        Get EXCH Socket
+        :param msg: Message received
+        :return: exch_socket
+        """
         if msg[int(ParticipateMSGLocation.sim_flag)]:
             logging.info(f'--- This run is a simulation ---')
             es = msg[int(ParticipateMSGLocation.exch_socket)]
@@ -121,16 +124,10 @@ class Server:
         # Pushing the local model to DB
         await self._push_local_models(agent_id, model_id, lmodels, gene_time, performance)
 
-        # Wait for sending messages
-        await asyncio.sleep(0.1)
-
-        # Send out the cluster models
-        await self._send_cluster_models_to_all()
-
         # Recognize this step as one aggregation round
         self.sm.increment_round()
 
-    async def send_updated_global_model(self, addr, es):
+    async def send_updated_global_model(self, websocket, agent_id, exch_socket):
         """
         Send cluster models to the agent
         :param addr: IP address of agent
@@ -139,11 +136,13 @@ class Server:
         """
         model_id = self.sm.cluster_model_ids[-1]
         cluster_models = convert_LDict_to_Dict(self.sm.cluster_models)
-        msg = generate_cluster_model_dist_message(self.sm.id, model_id, self.sm.round, cluster_models)
-        await send(msg, addr, es)
+        reply = generate_agent_participation_confirmation_message(
+            self.sm.id, model_id, cluster_models, 
+            self.sm.round, agent_id, exch_socket, self.recv_socket)
+        await send_websocket(reply, websocket)
+
     
-    
-    async def receive_local_models(self, websocket: str, path):
+    async def receive_msg_from_agent(self, websocket: str, path):
         """
         Receiving local model updates
         :param websocket:
@@ -152,18 +151,35 @@ class Server:
         """
         msg = await receive(websocket)
 
-        lmodels = msg[int(ParticipateMSGLocation.lmodels)]
-        agent_id = msg[int(ParticipateMSGLocation.agent_id)]
-        model_id = msg[int(ParticipateMSGLocation.model_id)]
-        gene_time = msg[int(ParticipateMSGLocation.gene_time)]
-        performance = msg[int(ParticipateMSGLocation.meta_data)]
-        await self._push_local_models(agent_id, model_id, lmodels, gene_time, performance)
+        if msg[int(ModelUpMSGLocation.msg_type)] == AgentMsgType.update:
+            lmodels = msg[int(ModelUpMSGLocation.lmodels)]
+            agent_id = msg[int(ModelUpMSGLocation.agent_id)]
+            model_id = msg[int(ModelUpMSGLocation.model_id)]
+            gene_time = msg[int(ModelUpMSGLocation.gene_time)]
+            performance = msg[int(ModelUpMSGLocation.meta_data)]
+            await self._push_local_models(agent_id, model_id, lmodels, gene_time, performance)
 
-        logging.info('--- Local Model Received ---')
-        logging.debug(f'Local models: {lmodels}')
+            logging.info('--- Local Model Received ---')
+            logging.debug(f'Local models: {lmodels}')
 
-        # Store local models in the buffer
-        self.sm.buffer_local_models(lmodels, participate=False, meta_data=performance)
+            # Store local models in the buffer
+            self.sm.buffer_local_models(lmodels, participate=False, meta_data=performance)
+
+        elif msg[int(PollingMSGLocation.msg_type)] == AgentMsgType.polling:
+            logging.debug(f'--- AgentMsgType.polling ---')
+            # print(f'current round:', self.sm.round)
+            # print(f'reported round:', str(msg[int(PollingMSGLocation.round)]))
+            if self.sm.round > int(msg[int(PollingMSGLocation.round)]):
+                logging.info(f'--- Polling: Global model is ready. Sending... ---')
+                model_id = self.sm.cluster_model_ids[-1]
+                cluster_models = convert_LDict_to_Dict(self.sm.cluster_models)
+                msg = generate_cluster_model_dist_message(self.sm.id, model_id, self.sm.round, cluster_models)
+                await send_websocket(msg, websocket)
+
+            else:
+                logging.info(f'--- Polling: Global model is not ready yet ---')
+                msg = generate_ack_message()
+                await send_websocket(msg, websocket)
 
 
     async def model_synthesis_routine(self):
@@ -187,8 +203,9 @@ class Server:
 
                 # Push cluster model to DB
                 await self._push_cluster_models()
-
-                await self._send_cluster_models_to_all()
+                
+                if self.is_polling == False:
+                    await self._send_cluster_models_to_all()
 
                 # increment the aggregation round number
                 self.sm.increment_round()
@@ -265,6 +282,6 @@ if __name__ == "__main__":
     logging.info("--- Aggregator Started ---")
 
     init_fl_server(s.register, 
-                   s.receive_local_models, 
+                   s.receive_msg_from_agent, 
                    s.model_synthesis_routine(), 
                    s.aggr_ip, s.reg_socket, s.recv_socket)
