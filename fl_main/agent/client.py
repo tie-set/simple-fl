@@ -3,7 +3,7 @@ import time
 import logging
 import sys
 import os
-from typing import Dict, List, Any
+from typing import Dict, Any
 from threading import Thread
 
 from fl_main.lib.util.communication_handler import init_client_server, send, receive
@@ -11,7 +11,7 @@ from fl_main.lib.util.helpers import read_config, init_loop, \
      save_model_file, load_model_file, read_state, write_state, generate_id, \
      set_config_file, get_ip, compatible_data_dict_read, generate_model_id, \
      create_data_dict_from_models, create_meta_data_dict
-from fl_main.lib.util.states import ClientState, AggMsgType, AgentMsgType, ParticipateConfirmationMSGLocation, GMDistributionMsgLocation, IDPrefix
+from fl_main.lib.util.states import ClientState, AggMsgType, ParticipateConfirmationMSGLocation, GMDistributionMsgLocation, IDPrefix
 from fl_main.lib.util.messengers import generate_lmodel_update_message, generate_agent_participation_message, generate_polling_message
 
 class Client:

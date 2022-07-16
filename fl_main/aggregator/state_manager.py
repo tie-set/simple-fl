@@ -1,11 +1,10 @@
 import numpy as np
 import logging
 import time
-import sys
 from typing import Dict, Any
 
 from fl_main.lib.util.data_struc import LimitedDict
-from fl_main.lib.util.helpers import read_config, generate_id, generate_model_id, set_config_file
+from fl_main.lib.util.helpers import generate_id, generate_model_id
 from fl_main.lib.util.states import IDPrefix
 
 class StateManager:

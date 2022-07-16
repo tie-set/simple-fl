@@ -10,7 +10,7 @@ from fl_main.lib.util.helpers import read_config, set_config_file
 from fl_main.lib.util.messengers import generate_db_push_message, generate_ack_message, \
      generate_cluster_model_dist_message, generate_agent_participation_confirmation_message
 from fl_main.lib.util.states import ParticipateMSGLocation, ModelUpMSGLocation, PollingMSGLocation, \
-     ModelType, AggMsgType, AgentMsgType
+     ModelType, AgentMsgType
 
 from .state_manager import StateManager
 from .aggregation import Aggregator

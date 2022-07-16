@@ -2,8 +2,6 @@ import pickle
 import logging
 import time
 import os
-import pathlib
-import sys
 from typing import Any, List
 
 from .sqlite_db import SQLiteDBHandler
