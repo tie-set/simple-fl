@@ -75,6 +75,12 @@ class PseudoDB:
 
 
     def _push_all_data_to_db(self, msg: List[Any]):
+        """
+        push data received from the aggregator to database 
+        and save models in the file system
+        :param msg: Message received
+        :return: component id, round, message typr, model id, gene time, local perf, num samples
+        """
         pm = self._parse_message(msg)
         self.dbhandler.insert_an_entry(*pm)
 
@@ -86,6 +92,11 @@ class PseudoDB:
             pickle.dump(models, f)
 
     def _parse_message(self, msg: List[Any]):
+        """
+        extract values from the message
+        :param msg: Message received
+        :return:
+        """
         component_id = msg[int(DBPushMsgLocation.component_id)]
         r = msg[int(DBPushMsgLocation.round)]
         mt = msg[int(DBPushMsgLocation.model_type)]

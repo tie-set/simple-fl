@@ -16,7 +16,7 @@ class StateManager:
     - cluster models pulled from database
     - round number
     - agents under this aggregator
-    - SG model
+    - global cluster model
     - cluster model
     """
 
@@ -24,10 +24,10 @@ class StateManager:
         # unique ID for the aggregator
         self.id = generate_id()
 
-        # websocket of agents
+        # informatioin of connected agents
         self.agent_set = list()
 
-        # model names (agreed names only)
+        # model names of ML models
         self.mnames = list()
 
         # aggregation round
@@ -40,7 +40,7 @@ class StateManager:
         # stores sample numbers for each agent
         self.local_model_num_samples = list()
 
-        # stores SG/cluster models by names
+        # stores cluster models by names
         # {'model_name' : list of a type of models (only used location 0)}
         self.cluster_models = LimitedDict(self.mnames)
 
@@ -77,6 +77,12 @@ class StateManager:
             return False
 
     def initialize_model_info(self, lmodels, init_weights_flag):
+        """
+        Initialize the structure of NNs (numpy.array) based on the first models received
+        :param models: lmodels - local ML models
+        :param models: init_weights_flag - for initializing base model
+        :return:
+        """
         for key in lmodels.keys():
             self.mnames.append(key)
         print("model names:", self.mnames)
@@ -138,14 +144,14 @@ class StateManager:
         else:  # if it comes from the participation message
             pass
 
-        # if the cluster/SG models have not been initialized
+        # if the cluster models have not been initialized
         # first time call only
         if not self.initialized:
             self.initialize_models(models)
 
     def clear_saved_models(self):
         """
-        Clear all models stored for a next round (cluster models and SG models)
+        Clear all models stored for a next round (cluster models)
         :return:
         """
         for mname in self.mnames:
@@ -162,9 +168,12 @@ class StateManager:
 
     def add_agent(self, agent_name: str, agent_id: str, agent_ip: str, socket: str):
         """
-        Save the websocket info of an agent
-        :param agent: str - websocket address
-        :return:
+        Save the info of an agent
+        :param agent_name: str - agent name
+        :param agent_id: str - agent ID
+        :param agent_ip: str - agent IP address
+        :param socket: str - port number to the agent
+        :return: agent_id, socket
         """
         for agent in self.agent_set:
             if agent_name == agent['agent_name']:
@@ -182,7 +191,7 @@ class StateManager:
 
     def increment_round(self):
         """
-        Increment the round number (called after each SG model synthesis)
+        Increment the round number (called after each global model synthesis)
         :return:
         """
         self.round += 1

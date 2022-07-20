@@ -63,11 +63,11 @@ def generate_model_id(component_type: str, component_id: str, generation_time: f
 
 def create_data_dict_from_models(model_id, models, component_id):
     """
-    Save the trained models to the local file
+    Create the data dictionary from ML models
     :param model_id: str - model ID
     :param models: np.array - models
     :param component_id: ID of FL system
-    :return:
+    :return: data_dict
     """
     data_dict = dict()
     data_dict['models'] = models
@@ -79,6 +79,12 @@ def create_data_dict_from_models(model_id, models, component_id):
 
 
 def create_meta_data_dict(perf_val, num_samples):
+    """
+    Create the meta data dictionary from ML models
+    :param perf_val: performance metrics
+    :param num_samples: number of samples
+    :return: meta_data_dict
+    """
     meta_data_dict = dict()
     meta_data_dict["accuracy"] = perf_val
     meta_data_dict["num_samples"] = num_samples
@@ -181,6 +187,10 @@ def write_state(path: str, name: str, state: ClientState):
 
 
 def get_ip() -> str:
+    """
+    Get IP address of the machine
+    :return: IP address
+    """
     s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     try:
         # doesn't even have to be reachable
@@ -196,6 +206,8 @@ def get_ip() -> str:
 def init_loop(func):
     """
     Start a loop function
+    :param func: function for loop run
+    :return:
     """
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)

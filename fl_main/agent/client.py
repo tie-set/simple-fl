@@ -74,7 +74,6 @@ class Client:
         # Polling Method
         self.is_polling = bool(self.config['polling'])
 
-
     async def participate(self):
         """
         Send the first message to join an aggregator and
@@ -105,7 +104,6 @@ class Client:
         self.id = resp[int(ParticipateConfirmationMSGLocation.agent_id)]
 
         self.save_model_from_message(resp, 0)
-
 
     async def wait_models(self, websocket, path):
         """
@@ -236,13 +234,13 @@ class Client:
         th.start()
 
     # Load and save models
-    def load_model(self) -> Dict[str, Any]:
-        """
-        Read a global model file and return the models
-        :return: Dict[str,np.array] - models
-        """
-        data_dict, _ = load_model_file(self.model_path, self.gmfile)
-        return data_dict
+    # def load_model(self) -> Dict[str, Any]:
+    #     """
+    #     Read a global model file and return the models
+    #     :return: Dict[str,np.array] - models
+    #     """
+    #     data_dict, _ = load_model_file(self.model_path, self.gmfile)
+    #     return data_dict
 
     # Read and change the client state
     def read_state(self) -> ClientState:
@@ -266,7 +264,7 @@ class Client:
     def send_initial_model(self, initial_models, num_samples=1, perf_val=0.0):
         self.setup_sending_models(initial_models, num_samples, perf_val)
 
-    def send_trained_model(self, models, num_samples, performance_value):
+    def send_trained_model(self, models, num_samples, perf_value):
         # Check the state in case another global models arrived during the training
         state = self.read_state()
         if state == ClientState.gm_ready:
@@ -274,7 +272,7 @@ class Client:
             logging.info(f'--- The training was too slow. A new set of global models are available. ---')
         else:  # Keep the training results
             # Send models
-            self.setup_sending_models(models, num_samples, performance_value)
+            self.setup_sending_models(models, num_samples, perf_value)
 
     def setup_sending_models(self, models, num_samples, perf_val):
         """
@@ -305,7 +303,8 @@ class Client:
         logging.info(f'--- Reading Global models ---')
 
         # load models from the local file
-        data_dict = self.load_model()
+        # data_dict = self.load_model()
+        data_dict, _ = load_model_file(self.model_path, self.gmfile)
         global_models = data_dict['models']
         # global_model_id, global_models = self.load_global_model_data()
 

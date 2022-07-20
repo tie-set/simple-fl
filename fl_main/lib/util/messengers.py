@@ -30,9 +30,6 @@ def generate_lmodel_update_message(agent_id: str,
     msg.append(agent_id)  # 1
     msg.append(model_id)  # 2
     msg.append(local_models)  # 3
-    # msg.append(None)  # 4
-    # msg.append(None)  # 5
-    # msg.append(None)  # 6
     msg.append(time.time())  # 4
     msg.append(performance_dict)  # 5
     return msg
@@ -73,7 +70,7 @@ def generate_agent_participation_message(agent_name: str,
     msg.append(agent_name)  # 9
     return msg
 
-def generate_agent_participation_confirmation_message(aggregator_id: str,
+def generate_agent_participation_confirm_message(aggregator_id: str,
                                                       model_id: str,
                                                       models: Dict[str,np.array],
                                                       round: int,
@@ -93,11 +90,11 @@ def generate_agent_participation_confirmation_message(aggregator_id: str,
 
 def generate_ack_message():
     msg = list()
-    msg.append(AggMsgType.ack)
+    msg.append(AggMsgType.ack) # 0
     return msg
 
 def generate_polling_message(round: int):
     msg = list()
-    msg.append(AgentMsgType.polling)
-    msg.append(round)
+    msg.append(AgentMsgType.polling) # 0
+    msg.append(round) # 1
     return msg

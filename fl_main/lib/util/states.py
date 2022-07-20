@@ -15,7 +15,7 @@ class ClientState(IntEnum):
     sending = 2
     gm_ready = 3
 
-# TYPE ENUM
+# TYPES
 class ModelType(Enum):
     """
     Types of ML models
@@ -49,8 +49,6 @@ class AggMsgType(Enum):
     ack = 3
 
 # MSG LOCATION
-# MsgType = 0
-
 class ParticipateMSGLocation(IntEnum):
     """
     index indicator to read a participate message
