@@ -161,13 +161,11 @@ class Client:
                     logging.info(f'--- Waiting for Global Model ---')
 
             elif state == ClientState.training:
-                # Local model is being trained
-                # Do nothing
+                # Local model is being trained, do nothing
                 logging.info(f'--- Training is happening ---')
 
             elif state == ClientState.gm_ready:
-                # Global model has been received
-                # Do nothing
+                # Global model has been received, do nothing
                 logging.info(f'--- Global Model is ready ---')
 
             else:
@@ -233,15 +231,6 @@ class Client:
         th = Thread(target = init_loop, args=[self.model_exchange_routine()])
         th.start()
 
-    # Load and save models
-    # def load_model(self) -> Dict[str, Any]:
-    #     """
-    #     Read a global model file and return the models
-    #     :return: Dict[str,np.array] - models
-    #     """
-    #     data_dict, _ = load_model_file(self.model_path, self.gmfile)
-    #     return data_dict
-
     # Read and change the client state
     def read_state(self) -> ClientState:
         """
@@ -303,10 +292,8 @@ class Client:
         logging.info(f'--- Reading Global models ---')
 
         # load models from the local file
-        # data_dict = self.load_model()
         data_dict, _ = load_model_file(self.model_path, self.gmfile)
         global_models = data_dict['models']
-        # global_model_id, global_models = self.load_global_model_data()
 
         self.tran_state(ClientState.training)
 
