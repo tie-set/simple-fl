@@ -122,5 +122,5 @@ if __name__ == '__main__':
         print("Trained models:", models)
 
         # Local Model evaluation (id, accuracy)
-        performance_value = compute_performance(models, prep_test_data())
-        fl_client.send_trained_model(models, 1, performance_value)
+        perf_value = compute_performance(models, prep_test_data())
+        fl_client.send_trained_model(models, 1, perf_value)
