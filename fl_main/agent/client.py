@@ -103,6 +103,8 @@ class Client:
         self.msend_socket = resp[int(ParticipateConfirmationMSGLocation.recv_socket)]
         self.id = resp[int(ParticipateConfirmationMSGLocation.agent_id)]
 
+        logging.info(f'--- Global Model Received ---')
+
         self.save_model_from_message(resp, 0)
 
     async def wait_models(self, websocket, path):
@@ -132,10 +134,11 @@ class Client:
 
         # Save the received cluster global models to the local file
         save_model_file(data_dict, self.model_path, self.gmfile)
-        logging.info(f'--- Normal transition: The trained local models saved ---')
+        logging.info(f'--- Global Models Saved ---')
         
         # State transition to gm_ready
         self.tran_state(ClientState.gm_ready)
+        logging.info(f'--- Client State is now gm_ready ---')
 
     async def model_exchange_routine(self):
         """
@@ -180,15 +183,17 @@ class Client:
         logging.debug(f'Trained Models: {msg}')
 
         await send(msg, self.aggr_ip, self.msend_socket)
+        logging.info('--- Local Models Sent ---')
 
         # State transition to waiting_gm
         self.tran_state(ClientState.waiting_gm)
-        logging.info('--- Local Models Sent ---')
+        logging.info(f'--- Client State is now waiting_gm ---')
+        
 
     async def process_polling(self):
         logging.info(f'--- Polling to see if there is any update ---')
 
-        msg = generate_polling_message(self.round)
+        msg = generate_polling_message(self.round, self.id)
         resp = await send(msg, self.aggr_ip, self.msend_socket)
         if resp[0] == AggMsgType.update:
             logging.info(f'--- Global Model Received ---')
@@ -278,9 +283,10 @@ class Client:
         meta_data_dict = create_meta_data_dict(perf_val, num_samples)
         data_dict = create_data_dict_from_models(model_id, models, self.id)
         save_model_file(data_dict, self.model_path, self.lmfile, meta_data_dict)
-        logging.info(f'--- Normal transition: The trained local models saved ---')
+        logging.info(f'--- Local (Initial/Trained) Models saved ---')
 
         self.tran_state(ClientState.sending)
+        logging.info(f'--- Client State is now sending ---')
 
     # Waiting models
     def wait_for_global_model(self):
@@ -289,13 +295,13 @@ class Client:
         while (self.read_state() != ClientState.gm_ready):
             time.sleep(5)
 
-        logging.info(f'--- Reading Global models ---')
-
         # load models from the local file
         data_dict, _ = load_model_file(self.model_path, self.gmfile)
         global_models = data_dict['models']
+        logging.info(f'--- Global Models read by Agent ---')
 
         self.tran_state(ClientState.training)
+        logging.info(f'--- Client State is now training ---')
 
         return global_models
 

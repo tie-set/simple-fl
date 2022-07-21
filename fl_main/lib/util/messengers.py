@@ -93,8 +93,9 @@ def generate_ack_message():
     msg.append(AggMsgType.ack) # 0
     return msg
 
-def generate_polling_message(round: int):
+def generate_polling_message(round: int, agent_id: str):
     msg = list()
     msg.append(AgentMsgType.polling) # 0
     msg.append(round) # 1
+    msg.append(agent_id) # 2
     return msg

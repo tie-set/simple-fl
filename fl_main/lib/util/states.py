@@ -120,3 +120,4 @@ class PollingMSGLocation(IntEnum):
     """
     msg_type = 0
     round = 1
+    agent_id = 2

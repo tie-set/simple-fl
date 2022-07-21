@@ -85,7 +85,7 @@ class StateManager:
         """
         for key in lmodels.keys():
             self.mnames.append(key)
-        print("model names:", self.mnames)
+        # print("model names:", self.mnames)
         self.local_model_buffers = LimitedDict(self.mnames)
         self.cluster_models = LimitedDict(self.mnames)
 
@@ -118,7 +118,7 @@ class StateManager:
             self.cluster_model_ids.append(id)
 
         self.initialized = True  # set True so that it will never be called automatically
-        logging.info('--- Model Formats initialized ---')
+        logging.info(f'--- Model Formats initialized, model names: {self.mnames} ---')
 
     def buffer_local_models(self,
                             models: Dict[str, np.array],

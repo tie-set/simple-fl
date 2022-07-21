@@ -136,6 +136,7 @@ class Server:
             self.sm.id, model_id, cluster_models, 
             self.sm.round, agent_id, exch_socket, self.recv_socket)
         await send_websocket(reply, websocket)
+        logging.info(f'--- Global Models Sent to {agent_id} ---')
 
     async def receive_msg_from_agent(self, websocket, path):
         """
@@ -182,11 +183,11 @@ class Server:
         # print(f'current round:', self.sm.round)
         # print(f'reported round:', str(msg[int(PollingMSGLocation.round)]))
         if self.sm.round > int(msg[int(PollingMSGLocation.round)]):
-            logging.info(f'--- Polling: Global model is ready. Sending... ---')
             model_id = self.sm.cluster_model_ids[-1]
             cluster_models = convert_LDict_to_Dict(self.sm.cluster_models)
-            msg = generate_cluster_model_dist_message(self.sm.id, model_id, self.sm.round, cluster_models)
-            await send_websocket(msg, websocket)
+            gm_msg = generate_cluster_model_dist_message(self.sm.id, model_id, self.sm.round, cluster_models)
+            await send_websocket(gm_msg, websocket)
+            logging.info(f'--- Global Models Sent to {msg[int(PollingMSGLocation.agent_id)]} ---')
         else:
             logging.info(f'--- Polling: Global model is not ready yet ---')
             msg = generate_ack_message()
@@ -231,7 +232,7 @@ class Server:
         msg = generate_cluster_model_dist_message(self.sm.id, model_id, self.sm.round, cluster_models)
         for agent in self.sm.agent_set:
             await send(msg, agent['agent_ip'], agent['socket'])
-            logging.info(f'--- Cluster Models Sent to {agent["agent_ip"]}:{agent["socket"]}---')
+            logging.info(f'--- Global Models Sent to {agent["agent_id"]} ---')
 
     async def _push_local_models(self, agent_id: str, model_id: str, local_models: Dict[str, np.array],\
                                  gene_time: float, performance: Dict[str, float]) -> List[Any]:
