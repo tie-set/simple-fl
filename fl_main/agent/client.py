@@ -105,40 +105,7 @@ class Client:
 
         logging.info(f'--- Global Model Received ---')
 
-        self.save_model_from_message(resp, 0)
-
-    async def wait_models(self, websocket, path):
-        """
-        Waiting for cluster models from the aggregator
-        :param websocket:
-        :return:
-        """
-        gm_msg = await receive(websocket)
-        logging.info(f'--- Global Model Received ---')
-
-        logging.debug(f'Models: {gm_msg}')
-
-        self.save_model_from_message(gm_msg, 1)
-
-    def save_model_from_message(self, msg, type=1):
-
-        if type == 0: 
-            MSG_LOC = ParticipateConfirmationMSGLocation
-        elif type == 1:
-            MSG_LOC = GMDistributionMsgLocation
-
-        # pass (model_id, models) to an app
-        data_dict = create_data_dict_from_models(msg[int(MSG_LOC.model_id)], 
-                        msg[int(MSG_LOC.global_models)], msg[int(MSG_LOC.aggregator_id)])
-        self.round = msg[int(MSG_LOC.round)]
-
-        # Save the received cluster global models to the local file
-        save_model_file(data_dict, self.model_path, self.gmfile)
-        logging.info(f'--- Global Models Saved ---')
-        
-        # State transition to gm_ready
-        self.tran_state(ClientState.gm_ready)
-        logging.info(f'--- Client State is now gm_ready ---')
+        self.save_model_from_message(resp, ParticipateConfirmationMSGLocation)
 
     async def model_exchange_routine(self):
         """
@@ -173,23 +140,22 @@ class Client:
 
             else:
                 logging.error(f'--- State Not Defined ---')
+    
 
-    async def send_models(self):
-        # Read the models from the local file
-        data_dict, performance_dict = load_model_file(self.model_path, self.lmfile)
-        _, _, models, model_id = compatible_data_dict_read(data_dict)
-        msg = generate_lmodel_update_message(self.id, model_id, models, performance_dict)
+    # Push or Polling
+    async def wait_models(self, websocket, path):
+        """
+        Waiting for cluster models from the aggregator
+        :param websocket:
+        :return:
+        """
+        gm_msg = await receive(websocket)
+        logging.info(f'--- Global Model Received ---')
 
-        logging.debug(f'Trained Models: {msg}')
+        logging.debug(f'Models: {gm_msg}')
 
-        await send(msg, self.aggr_ip, self.msend_socket)
-        logging.info('--- Local Models Sent ---')
-
-        # State transition to waiting_gm
-        self.tran_state(ClientState.waiting_gm)
-        logging.info(f'--- Client State is now waiting_gm ---')
-        
-
+        self.save_model_from_message(gm_msg, GMDistributionMsgLocation)
+    
     async def process_polling(self):
         logging.info(f'--- Polling to see if there is any update ---')
 
@@ -197,7 +163,7 @@ class Client:
         resp = await send(msg, self.aggr_ip, self.msend_socket)
         if resp[0] == AggMsgType.update:
             logging.info(f'--- Global Model Received ---')
-            self.save_model_from_message(resp, 1)
+            self.save_model_from_message(resp, GMDistributionMsgLocation)
         else:
             logging.info(f'--- Global Model is NOT ready (ACK) ---')
 
@@ -236,6 +202,23 @@ class Client:
         th = Thread(target = init_loop, args=[self.model_exchange_routine()])
         th.start()
 
+    # Save models from message
+    def save_model_from_message(self, msg, MSG_LOC):
+
+        # pass (model_id, models) to an app
+        data_dict = create_data_dict_from_models(msg[int(MSG_LOC.model_id)], 
+                        msg[int(MSG_LOC.global_models)], msg[int(MSG_LOC.aggregator_id)])
+        self.round = msg[int(MSG_LOC.round)]
+
+        # Save the received cluster global models to the local file
+        save_model_file(data_dict, self.model_path, self.gmfile)
+        logging.info(f'--- Global Models Saved ---')
+        
+        # State transition to gm_ready
+        self.tran_state(ClientState.gm_ready)
+        logging.info(f'--- Client State is now gm_ready ---')
+    
+
     # Read and change the client state
     def read_state(self) -> ClientState:
         """
@@ -247,14 +230,28 @@ class Client:
     def tran_state(self, state: ClientState):
         """
         Change the state of the agent
-        State is indicated in two places: (1) local file 'state' and (2) waiting_flag
+        State is indicated in local file 'state'
         :param state: ClientState
         :return:
         """
-        # self.waiting_flag = state
         write_state(self.model_path, self.statefile, state)
 
     # Sending models
+    async def send_models(self):
+        # Read the models from the local file
+        data_dict, performance_dict = load_model_file(self.model_path, self.lmfile)
+        _, _, models, model_id = compatible_data_dict_read(data_dict)
+        msg = generate_lmodel_update_message(self.id, model_id, models, performance_dict)
+
+        logging.debug(f'Trained Models: {msg}')
+
+        await send(msg, self.aggr_ip, self.msend_socket)
+        logging.info('--- Local Models Sent ---')
+
+        # State transition to waiting_gm
+        self.tran_state(ClientState.waiting_gm)
+        logging.info(f'--- Client State is now waiting_gm ---')
+
     def send_initial_model(self, initial_models, num_samples=1, perf_val=0.0):
         self.setup_sending_models(initial_models, num_samples, perf_val)
 
