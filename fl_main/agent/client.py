@@ -11,7 +11,7 @@ from fl_main.lib.util.helpers import read_config, init_loop, \
      save_model_file, load_model_file, read_state, write_state, generate_id, \
      set_config_file, get_ip, compatible_data_dict_read, generate_model_id, \
      create_data_dict_from_models, create_meta_data_dict
-from fl_main.lib.util.states import ClientState, AggMsgType, ParticipateConfirmationMSGLocation, GMDistributionMsgLocation, IDPrefix
+from fl_main.lib.util.states import IDPrefix, ClientState, AggMsgType, ParticipateConfirmationMSGLocation, GMDistributionMsgLocation, PollingMSGLocation
 from fl_main.lib.util.messengers import generate_lmodel_update_message, generate_agent_participation_message, generate_polling_message
 
 class Client:
@@ -161,7 +161,7 @@ class Client:
 
         msg = generate_polling_message(self.round, self.id)
         resp = await send(msg, self.aggr_ip, self.msend_socket)
-        if resp[0] == AggMsgType.update:
+        if resp[int(PollingMSGLocation.msg_type)] == AggMsgType.update:
             logging.info(f'--- Global Model Received ---')
             self.save_model_from_message(resp, GMDistributionMsgLocation)
         else:

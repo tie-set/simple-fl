@@ -17,11 +17,11 @@ def init_db_server(func, ip, socket):
     loop.run_until_complete(start_server)
     loop.run_forever()
 
-def init_fl_server(register, receive_local_models, model_synthesis_routine, aggr_ip, reg_socket, recv_socket):
+def init_fl_server(register, receive_msg_from_agent, model_synthesis_routine, aggr_ip, reg_socket, recv_socket):
     """
     Start the FL server
     :param register: Function
-    :param receive_local_models: Function
+    :param receive_msg_from_agent: Function
     :param model_synthesis_routine: Function
     :param aggr_ip: IP address
     :param reg_socket: port num
@@ -31,7 +31,7 @@ def init_fl_server(register, receive_local_models, model_synthesis_routine, aggr
     loop = asyncio.get_event_loop()
     start_server = websockets.serve(register, aggr_ip, reg_socket,
                                     max_size=None, max_queue=None)
-    start_receiver = websockets.serve(receive_local_models, aggr_ip, recv_socket,
+    start_receiver = websockets.serve(receive_msg_from_agent, aggr_ip, recv_socket,
                                       max_size=None, max_queue=None)
     loop.run_until_complete(asyncio.gather(start_server,
                                            start_receiver,
