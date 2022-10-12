@@ -61,7 +61,7 @@ class Server:
         """
         # Receiving participation messages
         msg = await receive(websocket)
-        logging.info('--- Participate Message Received ---')
+        logging.info(f'--- {msg[int(ParticipateMSGLocation.msg_type)]} Message Received ---')
         logging.debug(f'Message: {msg}')
 
         # Check if it is a simulation run

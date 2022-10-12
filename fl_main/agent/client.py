@@ -103,7 +103,8 @@ class Client:
         self.msend_socket = resp[int(ParticipateConfirmationMSGLocation.recv_socket)]
         self.id = resp[int(ParticipateConfirmationMSGLocation.agent_id)]
 
-        logging.info(f'--- Global Model Received ---')
+        # Receiving the welcome message
+        logging.info(f'--- {resp[int(ParticipateConfirmationMSGLocation.msg_type)]} Message Received ---')
 
         self.save_model_from_message(resp, ParticipateConfirmationMSGLocation)
 
@@ -164,7 +165,7 @@ class Client:
         if resp[int(PollingMSGLocation.msg_type)] == AggMsgType.update:
             logging.info(f'--- Global Model Received ---')
             self.save_model_from_message(resp, GMDistributionMsgLocation)
-        else:
+        else: # AggMsgType is "ack"
             logging.info(f'--- Global Model is NOT ready (ACK) ---')
 
 
